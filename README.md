@@ -5,9 +5,14 @@ If you find yourself needing a textview that sticks to the keyboard and does *no
 
 Usage
 =====
-
+####Instantiation
 Instantiate and add `MessageComposerView` to the bottom of your view controller. Example: 
 
     self.messageComposerView = [[NSBundle mainBundle] loadNibNamed:@"MessageComposerView" owner:nil options:nil][0];
     self.messageComposerView.delegate = self;
+####Delegation
+The `MessageComposerViewDelegate` has several delegate methods:
 
+1. **Required** `- (void)messageComposerSendMessageClickedWithMessage:(NSString*)message;`. This delegate method is triggered when the user presses the send button. The message is the message within the UITextView at the time the button was pressed.
+2. **Optional** `- (void)messageComposerFrameDidChange:(CGRect)frame withAnimationDuration:(float)duration;`
+3. **Optional** `- (void)messageComposerUserTyping;`. Triggered whenever the UITextView text changes.
