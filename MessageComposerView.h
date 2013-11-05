@@ -3,8 +3,8 @@
 
 @protocol MessageComposerViewDelegate <NSObject>
 - (void)messageComposerSendMessageClickedWithMessage:(NSString*)message;
-- (void)messageComposerFrameDidChange:(CGRect)frame withAnimationDuration:(float)duration;
 @optional
+- (void)messageComposerFrameDidChange:(CGRect)frame withAnimationDuration:(float)duration;
 - (void)messageComposerUserTyping;
 @end
 
