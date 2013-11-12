@@ -19,8 +19,8 @@
 @property(nonatomic) BOOL showingSendButton;
 - (IBAction)sendClicked:(id)sender;
 - (void)showSendButton;
-// needed for loading drafts
 - (void)resizeTextViewForText:(NSString*)text;
+- (void)resizeTextViewForText:(NSString*)text animated:(BOOL)animated;
 - (void)scrollTextViewToBottom;
 
 - (void)hideCustomKeyboard;

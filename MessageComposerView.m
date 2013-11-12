@@ -28,6 +28,14 @@ const int kComposerBackgroundBottomPadding = 10;
 
 - (void)awakeFromNib {
     [super awakeFromNib];
+    [self setup];
+}
+
+- (void)dealloc {
+    [self removeNotifications];
+}
+
+- (void)setup {
     [self addNotifications];
     
     self.sendButton.layer.cornerRadius = 5;
@@ -35,15 +43,10 @@ const int kComposerBackgroundBottomPadding = 10;
     [self.sendButton setTitleColor:[UIColor colorWithRed:210/255.0 green:210/255.0 blue:210/255.0 alpha:1.0] forState:UIControlStateHighlighted];
     [self.sendButton setTitleColor:[UIColor grayColor] forState:UIControlStateSelected];
     [self.sendButton setBackgroundColor:[UIColor orangeColor]];
-    
-    self.messageTextPlaceholder = @"Type message...";
+
     self.messageTextView.showsHorizontalScrollIndicator = NO;
     self.messageTextView.layer.cornerRadius = 5;
     [self resizeTextViewForText:@"" animated:NO];
-}
-
-- (void)dealloc {
-    [self removeNotifications];
 }
 
 
@@ -60,6 +63,8 @@ const int kComposerBackgroundBottomPadding = 10;
     [defaultCenter removeObserver:self name:UIDeviceOrientationDidChangeNotification object:nil];
 }
 
+
+#pragma mark - UITextViewDelegate
 - (void)textViewTextDidChange:(NSNotification*)notification {
     NSString* newText = self.messageTextView.text;
     [self resizeTextViewForText:newText animated:YES];
