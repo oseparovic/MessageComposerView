@@ -36,13 +36,6 @@ const int kComposerBackgroundBottomPadding = 10;
     [self.sendButton setTitleColor:[UIColor grayColor] forState:UIControlStateSelected];
     [self.sendButton setBackgroundColor:[UIColor orangeColor]];
     
-    // set the highlighted background color (only supported in iOS >= 5.0)
-    NSString *reqSysVer = @"5.0";
-    NSString *curSysVer = [[UIDevice currentDevice] systemVersion];
-    if ([curSysVer compare:reqSysVer options:NSNumericSearch] != NSOrderedAscending) {
-        [self.sendButton setTintColor:[UIColor colorWithRed:255/255.0 green:68/255.0 blue:0/255.0 alpha:1.0]];
-    }
-    
     self.messageTextPlaceholder = @"Type message...";
     self.messageTextView.showsHorizontalScrollIndicator = NO;
     self.messageTextView.layer.cornerRadius = 5;
@@ -163,6 +156,10 @@ const int kComposerBackgroundBottomPadding = 10;
         self.sendButton.frame = newSendButtonFrame;
         self.messageTextView.frame = newTextViewFrame;
         [self.messageTextView setContentOffset:CGPointMake(0, 0) animated:YES];
+    }
+    
+    if (self.delegate) {
+        [self.delegate messageComposerFrameDidChange:newContainerFrame withAnimationDuration:0.3];
     }
 }
 
