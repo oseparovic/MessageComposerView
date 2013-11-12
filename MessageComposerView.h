@@ -1,5 +1,6 @@
 #import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
+#import "UIProfileImageView.h"
 
 @protocol MessageComposerViewDelegate <NSObject>
 - (void)messageComposerSendMessageClickedWithMessage:(NSString*)message;
@@ -21,5 +22,11 @@
 // needed for loading drafts
 - (void)resizeTextViewForText:(NSString*)text;
 - (void)scrollTextViewToBottom;
+
+- (void)hideCustomKeyboard;
+- (void)showCustomKeyboard;
+- (void)toggleCustomKeyboardButtonsHidden:(BOOL)hidden;
+@property(nonatomic, strong) UIProfileImageView *profileButton;
+@property(nonatomic) BOOL showingCustomKeyboard;
 @end
 
