@@ -19,11 +19,11 @@ Instantiate and add `MessageComposerView` to the bottom of your view controller.
 ![](http://www.thegameengine.org/wp-content/uploads/2013/11/message_composer_quad_1.jpg)  
 The `MessageComposerViewDelegate` has several delegate methods:
 
-1. **Required** `- (void)messageComposerSendMessageClickedWithMessage:(NSString*)message;`  
-Triggered whenever the user presses the send button. The message is the message within the UITextView at the time the button was pressed.
+1. `- (void)messageComposerSendMessageClickedWithMessage:(NSString*)message;`  
+**Required** - Triggered whenever the user presses the send button. The message is the message within the UITextView at the time the button was pressed.
 
-2. **Optional** `- (void)messageComposerFrameDidChange:(CGRect)frame withAnimationDuration:(float)duration;`  
-Triggered whenever the UITextView frame is reconfigured.
+2. `- (void)messageComposerFrameDidChange:(CGRect)frame withAnimationDuration:(float)duration;`  
+**Optional** - Triggered whenever the UITextView frame is reconfigured.
 
-3. **Optional** `- (void)messageComposerUserTyping;`  
-Triggered whenever the UITextView text changes.
+3. `- (void)messageComposerUserTyping;`  
+**Optional** - Triggered whenever the UITextView text changes.
