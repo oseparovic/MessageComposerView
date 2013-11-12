@@ -5,8 +5,6 @@
 - (void)removeNotifications;
 - (void)textViewTextDidChange:(NSNotification*)notification;
 - (void)resizeTextViewForText:(NSString*)text;
-- (void)showSendButton;
-- (void)hideSendButton;
 @end
 
 @implementation MessageComposerView
@@ -81,7 +79,7 @@ const int kComposerBackgroundBottomPadding = 10;
         self.frame = frame;
     }];
     
-    if(self.delegate) {
+    if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
         [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:0.3];
     }
 }
@@ -94,7 +92,7 @@ const int kComposerBackgroundBottomPadding = 10;
         self.frame = frame;
     }];
     
-    if(self.delegate) {
+    if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
         [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:0.3];
     }
 }
@@ -107,8 +105,8 @@ const int kComposerBackgroundBottomPadding = 10;
         CGRect frame = self.frame;
         frame.origin.y = (self.superview.frame.size.height - [self currentKeyboardHeight]) - self.frame.size.height;
         self.frame = frame;
-    
-        if(self.delegate) {
+        
+        if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
             [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:animationTime];
         }
     }
@@ -163,17 +161,17 @@ const int kComposerBackgroundBottomPadding = 10;
         [self.messageTextView setContentOffset:CGPointMake(0, 0) animated:YES];
     }
     
-    if (self.delegate) {
+    if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
         [self.delegate messageComposerFrameDidChange:newContainerFrame withAnimationDuration:0.3];
     }
 }
 
-- (void)textBackgroundClicked:(id)sender {
-    [self.messageTextView becomeFirstResponder];
-}
-
 - (void)scrollTextViewToBottom {
     [self.messageTextView scrollRangeToVisible:NSMakeRange([self.messageTextView.text length], 0)];
+}
+
+- (void)finishEditing {
+    [self.messageTextView resignFirstResponder];
 }
 
 
@@ -208,20 +206,4 @@ const int kComposerBackgroundBottomPadding = 10;
     }
     return keyboardHeight;
 }
-
-
-#pragma mark - unused
-- (void)showCustomKeyboard {
-}
-- (void)hideCustomKeyboard {
-}
-- (void)toggleCustomKeyboardButtonsHidden:(BOOL)hidden {
-}
-- (void)showSendButton {
-}
-- (void)hideSendButton {
-}
-- (void)setMessageTextPlaceholder:(NSString *)messageTextPlaceholder {
-}
-
 @end
