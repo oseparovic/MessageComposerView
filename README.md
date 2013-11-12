@@ -16,11 +16,7 @@ Instantiate and add `MessageComposerView` to the bottom of your view controller.
                                                 self.messageComposerView.frame.size.height);
     [self.view addSubview:self.messageComposerView];
     
-![](http://www.thegameengine.org/wp-content/uploads/2013/11/message_composer_1-e1384237639396.png)&nbsp;
-![](http://www.thegameengine.org/wp-content/uploads/2013/11/message_composer_2-e1384237622949.png)&nbsp;
-![](http://www.thegameengine.org/wp-content/uploads/2013/11/message_composer_3-e1384237604464.png)&nbsp;
-![](http://www.thegameengine.org/wp-content/uploads/2013/11/message_composer_4-e1384237576549.png)&nbsp;
-####Delegation
+![](http://www.thegameengine.org/wp-content/uploads/2013/11/message_composer_quad_1.jpg)  
 The `MessageComposerViewDelegate` has several delegate methods:
 
 1. **Required** `- (void)messageComposerSendMessageClickedWithMessage:(NSString*)message;`  
