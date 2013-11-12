@@ -73,7 +73,7 @@ const int kComposerBackgroundBottomPadding = 10;
 
 - (void)textViewDidBeginEditing:(UITextView*)textView {
     CGRect frame = self.frame;
-    frame.origin.y = (self.superview.frame.size.height - [self currentKeyboardHeight]) - self.frame.size.height;
+    frame.origin.y = (self.superview.frame.size.height - [self currentKeyboardHeight]) - frame.size.height;
     
     [UIView animateWithDuration:0.3 animations:^{
         self.frame = frame;
@@ -98,16 +98,23 @@ const int kComposerBackgroundBottomPadding = 10;
 }
 
 - (void)handleRotation:(NSNotification*)notification {
-    if([self.messageTextView isFirstResponder]) {
-        NSDictionary* userInfo = [notification userInfo];
-        float animationTime = [userInfo[UIKeyboardAnimationDurationUserInfoKey] floatValue];
+    if ([self.messageTextView isFirstResponder]) {
+        UIDeviceOrientation deviceOrientation = [[UIDevice currentDevice] orientation];
         
+        float screenHeight;
+        if (UIDeviceOrientationIsLandscape(deviceOrientation)) {
+            // the width is going to become the height and vice versa
+            screenHeight = self.superview.frame.size.width;
+        } else {
+            // the height is going to be the width and vice versa
+            screenHeight = self.superview.frame.size.height;
+        }
         CGRect frame = self.frame;
-        frame.origin.y = (self.superview.frame.size.height - [self currentKeyboardHeight]) - self.frame.size.height;
+        frame.origin.y = (screenHeight - [self currentKeyboardHeight]) - frame.size.height;
         self.frame = frame;
         
         if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
-            [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:animationTime];
+            [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:0.3];
         }
     }
 }
