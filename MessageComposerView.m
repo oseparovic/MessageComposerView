@@ -23,21 +23,19 @@
 #import "MessageComposerView.h"
 
 @interface MessageComposerView()
-- (void)addNotifications;
-- (void)removeNotifications;
-- (void)textViewTextDidChange:(NSNotification*)notification;
-- (void)resizeTextViewForText:(NSString*)text;
+@property(nonatomic, strong) IBOutlet UITextView *messageTextView;
+@property(nonatomic, strong) IBOutlet UIButton *sendButton;
 @end
 
 @implementation MessageComposerView
 
-const int KEYBOARD_PORTRAIT_HEIGHT = 216;
-const int KEYBOARD_LANDSCAPE_HEIGHT = 162;
-
 const int kComposerBackgroundTopPadding = 10;
+const int kComposerBackgroundRightPadding = 10;
 const int kComposerBackgroundBottomPadding = 10;
+const int kComposerBackgroundLeftPadding = 10;
+const int kComposerTextViewButtonBetweenPadding = 10;
 
-// default animation time for 5 <= iOS < 7. Used as a default but should be overwritten by first keyboard notification. 
+// Default animation time for 5 <= iOS < 7. Used as a default but should be overwritten by first keyboard notification.
 float keyboardAnimationDuration = 0.25;
 
 - (id)initWithFrame:(CGRect)frame
@@ -45,6 +43,47 @@ float keyboardAnimationDuration = 0.25;
     self = [super initWithFrame:frame];
     if (self) {
         // Initialization code
+        
+        // TODO: initializing programatically, instead of from the XIB for some reason causes self.frame to NOT yet be resized at the point when
+        // a UIDeviceOrientationDidChangeNotification notification is caught. Initializing from the NIB has the opposite behaviour. Could be
+        // something to do with the autoresizingMask or a property not transferred over from the XIB...
+        self.frame = frame;
+        self.backgroundColor = [UIColor lightGrayColor];
+        self.autoresizingMask = UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleWidth;
+        self.userInteractionEnabled = YES;
+        self.multipleTouchEnabled = NO;
+        
+        CGRect sendButtonFrame = CGRectZero;
+        sendButtonFrame.size.width = 50;
+        sendButtonFrame.size.height = 34;
+        sendButtonFrame.origin.x = frame.size.width - kComposerBackgroundRightPadding - sendButtonFrame.size.width;
+        sendButtonFrame.origin.y = kComposerBackgroundRightPadding;
+        self.sendButton = [[UIButton alloc] initWithFrame:sendButtonFrame];
+        self.sendButton.autoresizingMask = UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleLeftMargin;
+        self.sendButton.layer.cornerRadius = 5;
+        [self.sendButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+        [self.sendButton setTitleColor:[UIColor colorWithRed:210/255.0 green:210/255.0 blue:210/255.0 alpha:1.0] forState:UIControlStateHighlighted];
+        [self.sendButton setTitleColor:[UIColor grayColor] forState:UIControlStateSelected];
+        [self.sendButton setBackgroundColor:[UIColor orangeColor]];
+        [self.sendButton setTitle:@"Send" forState:UIControlStateNormal];
+        self.sendButton.titleLabel.font = [UIFont boldSystemFontOfSize:14];
+        [self addSubview:self.sendButton];
+        
+        CGRect messageTextViewFrame = CGRectZero;
+        messageTextViewFrame.origin.x = kComposerBackgroundLeftPadding;
+        messageTextViewFrame.origin.y = kComposerBackgroundTopPadding;
+        messageTextViewFrame.size.width = frame.size.width - kComposerBackgroundLeftPadding - kComposerTextViewButtonBetweenPadding - sendButtonFrame.size.width - kComposerBackgroundRightPadding;
+        messageTextViewFrame.size.height = 34;
+        self.messageTextView = [[UITextView alloc] initWithFrame:messageTextViewFrame];
+        self.messageTextView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin;
+        self.messageTextView.showsHorizontalScrollIndicator = NO;
+        self.messageTextView.layer.cornerRadius = 5;
+        self.messageTextView.font = [UIFont systemFontOfSize:14];
+        self.messageTextView.delegate = self;
+        [self addSubview:self.messageTextView];
+        
+        [self addNotifications];
+        [self resizeTextViewForText:@"" animated:NO];
     }
     return self;
 }
@@ -132,6 +171,11 @@ float keyboardAnimationDuration = 0.25;
         frame.origin.y = ([self currentScreenHeight] - [self currentKeyboardHeight]) - frame.size.height;
         self.frame = frame;
         
+        // After rotating we want to make sure that the UITextView tightly wraps the text so we resize it. In this
+        // case we don't want to animate because we're already animating as part of the the rotation and don't want
+        // to overload the animation and make it look like someone is shuffling a deck of cards.
+        [self resizeTextViewForText:self.messageTextView.text animated:NO];
+        
         if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
             [self.delegate messageComposerFrameDidChange:self.frame withAnimationDuration:keyboardAnimationDuration];
         }
@@ -141,7 +185,7 @@ float keyboardAnimationDuration = 0.25;
 
 #pragma mark - Keyboard Notifications
 - (void)keyboardWillShow:(NSNotification*)notification {
-    // because keyboard animation time varies by iOS version, and we don't want to build the library
+    // Because keyboard animation time varies by iOS version, and we don't want to build the library
     // on top of spammy keyboard notifications we use UIKeyboardWillShowNotification ONLY to dynamically set our
     // animation duration. As a UIKeyboardWillShowNotification is fired BEFORE textViewDidBeginEditing
     // is triggered we can use the following value for all of animations including the first.
@@ -159,22 +203,22 @@ float keyboardAnimationDuration = 0.25;
     CGSize oldSize = self.messageTextView.frame.size;
     CGSize newSize = [self.messageTextView sizeThatFits:CGSizeMake(fixedWidth, MAXFLOAT)];
     
-    // if the height doesn't need to change skip reconfiguration
+    // If the height doesn't need to change skip reconfiguration
     if (oldSize.height == newSize.height) {
         return;
     }
     
-    // recalculate composer view container frame
+    // Recalculate composer view container frame
     CGRect newContainerFrame = self.frame;
     newContainerFrame.size.height = newSize.height + kComposerBackgroundTopPadding + kComposerBackgroundBottomPadding;
     newContainerFrame.origin.y = ([self currentScreenHeight] - [self currentKeyboardHeight]) - newContainerFrame.size.height;
     
-    // recalculate send button frame
+    // Recalculate send button frame
     CGRect newSendButtonFrame = self.sendButton.frame;
     newSendButtonFrame.origin.y = newContainerFrame.size.height - (kComposerBackgroundBottomPadding + newSendButtonFrame.size.height);
     
     
-    // recalculate UITextView frame
+    // Recalculate UITextView frame
     CGRect newTextViewFrame = self.messageTextView.frame;
     newTextViewFrame.size.height = newSize.height;
     newTextViewFrame.origin.y = kComposerBackgroundTopPadding;
@@ -217,7 +261,7 @@ float keyboardAnimationDuration = 0.25;
         [self.messageTextView setText:@""];
     } else {
         [self.messageTextView setText:@""];
-        // manually trigger the textViewDidChange method as setting the text when the messageTextView is not first responder the
+        // Manually trigger the textViewDidChange method as setting the text when the messageTextView is not first responder the
         // UITextViewTextDidChangeNotification notification does not get fired.
         [self textViewTextDidChange:nil];        
     }
@@ -231,10 +275,11 @@ float keyboardAnimationDuration = 0.25;
 
 - (float)currentKeyboardHeight {
     float keyboardHeight;
+    // TODO: this is very bad... another solution is need or this will break on internation keyboards etc.
     if (UIInterfaceOrientationIsPortrait([self currentOrientation])) {
-        keyboardHeight = KEYBOARD_PORTRAIT_HEIGHT;
+        keyboardHeight = 216;
     } else {
-        keyboardHeight = KEYBOARD_LANDSCAPE_HEIGHT;
+        keyboardHeight = 162;
     }
     return keyboardHeight;
 }
