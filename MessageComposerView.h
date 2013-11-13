@@ -20,6 +20,11 @@
 - (void)resizeTextViewForText:(NSString*)text;
 - (void)resizeTextViewForText:(NSString*)text animated:(BOOL)animated;
 - (void)scrollTextViewToBottom;
+
+// to avoid exposing the UITextView and attempt to prevent bad practice, startEditing and finishEditing
+// are available to become and resign first responder. This means you shouldn't have an excuse to
+// do [messageComposerView.messageTextView resignFirstResponder] etc.
+- (void)startEditing;
 - (void)finishEditing;
 @end
 
