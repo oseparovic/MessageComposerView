@@ -24,7 +24,7 @@ Example:
     @property (nonatomic, strong) MessageComposerView *messageComposerView;
     @end
 
-In your class file, instantiate and add `MessageComposerView` to the bottom of your view controller. Example: 
+In your class file, instantiate and add `MessageComposerView` to the bottom of your view controller. For the time being you **MUST** instantiate via `loadNibNamed`. `initWithFrame` still has unexpected behaviour on rotation. Example: 
 
     self.messageComposerView = [[NSBundle mainBundle] loadNibNamed:@"MessageComposerView" owner:nil options:nil][0];
     self.messageComposerView.delegate = self;
@@ -41,7 +41,7 @@ The `MessageComposerViewDelegate` has several delegate methods:
 **Required** - Triggered whenever the user presses the send button. `message` is the text within the `UITextView` at the time the button was pressed.
 
 2. `- (void)messageComposerFrameDidChange:(CGRect)frame withAnimationDuration:(float)duration;`  
-**Optional** - Triggered whenever the UITextView frame is reconfigured. `frame` is the CGRect that was applied to the MessageViewComposer container.
+**Optional** - Triggered whenever the UITextView frame is reconfigured. `frame` is the CGRect that was applied to the MessageComposerView container.
 
 3. `- (void)messageComposerUserTyping;`  
 **Optional** - Triggered whenever the UITextView text changes.
@@ -49,7 +49,7 @@ The `MessageComposerViewDelegate` has several delegate methods:
 How it works
 ------------
 
-MessageViewComposer tries to avoid hooking into `UIKeyboardWillShowNotification` and `UIKeyboardDidShowNotification` as I found them to be at times excessive and difficult to properly manipulate, especially when it came to rotation. Instead the `UIKeyboardWillShowNotification` notification is used solely to dynamically determine the keyboard animation duration on your device before any animations occur.
+MessageComposerView tries to avoid hooking into `UIKeyboardWillShowNotification` and `UIKeyboardDidShowNotification` as I found them to be at times excessive and difficult to properly manipulate, especially when it came to rotation. Instead the `UIKeyboardWillShowNotification` notification is used solely to dynamically determine the keyboard animation duration on your device before any animations occur.
 
 The actual resizing of the views is handled via the `UITextViewTextDidChangeNotification` notification and through the following `UITextViewDelegate` methods:
 
