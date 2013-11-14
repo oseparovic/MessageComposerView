@@ -44,43 +44,12 @@ float keyboardAnimationDuration = 0.25;
     if (self) {
         // Initialization code
         self.frame = frame;
-        self.backgroundColor = [UIColor lightGrayColor];
-        self.autoresizesSubviews = YES;
-        self.autoresizingMask = UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleWidth;
-        self.userInteractionEnabled = YES;
-        self.multipleTouchEnabled = NO;
-        
-        CGRect sendButtonFrame = CGRectZero;
-        sendButtonFrame.size.width = 50;
-        sendButtonFrame.size.height = 34;
-        sendButtonFrame.origin.x = frame.size.width - kComposerBackgroundRightPadding - sendButtonFrame.size.width;
-        sendButtonFrame.origin.y = kComposerBackgroundRightPadding;
-        self.sendButton = [[UIButton alloc] initWithFrame:sendButtonFrame];
-        self.sendButton.autoresizingMask = UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleLeftMargin;
-        self.sendButton.layer.cornerRadius = 5;
-        [self.sendButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-        [self.sendButton setTitleColor:[UIColor colorWithRed:210/255.0 green:210/255.0 blue:210/255.0 alpha:1.0] forState:UIControlStateHighlighted];
-        [self.sendButton setTitleColor:[UIColor grayColor] forState:UIControlStateSelected];
-        [self.sendButton setBackgroundColor:[UIColor orangeColor]];
-        [self.sendButton setTitle:@"Send" forState:UIControlStateNormal];
-        self.sendButton.titleLabel.font = [UIFont boldSystemFontOfSize:14];
+        self.sendButton = [[UIButton alloc] initWithFrame:CGRectZero];
+        self.messageTextView = [[UITextView alloc] initWithFrame:CGRectZero];
+        [self setup];
         [self addSubview:self.sendButton];
-        
-        CGRect messageTextViewFrame = CGRectZero;
-        messageTextViewFrame.origin.x = kComposerBackgroundLeftPadding;
-        messageTextViewFrame.origin.y = kComposerBackgroundTopPadding;
-        messageTextViewFrame.size.width = frame.size.width - kComposerBackgroundLeftPadding - kComposerTextViewButtonBetweenPadding - sendButtonFrame.size.width - kComposerBackgroundRightPadding;
-        messageTextViewFrame.size.height = 34;
-        self.messageTextView = [[UITextView alloc] initWithFrame:messageTextViewFrame];
-        self.messageTextView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin;
-        self.messageTextView.showsHorizontalScrollIndicator = NO;
-        self.messageTextView.layer.cornerRadius = 5;
-        self.messageTextView.font = [UIFont systemFontOfSize:14];
-        self.messageTextView.delegate = self;
         [self addSubview:self.messageTextView];
-        
-        [self addNotifications];
-        [self resizeTextViewForText:@"" animated:NO];
+
     }
     return self;
 }
@@ -95,16 +64,41 @@ float keyboardAnimationDuration = 0.25;
 }
 
 - (void)setup {
-    [self addNotifications];
+    self.backgroundColor = [UIColor lightGrayColor];
+    self.autoresizesSubviews = YES;
+    self.autoresizingMask = UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleWidth;
+    self.userInteractionEnabled = YES;
+    self.multipleTouchEnabled = NO;
     
+    CGRect sendButtonFrame = self.bounds;
+    sendButtonFrame.size.width = 50;
+    sendButtonFrame.size.height = 34;
+    sendButtonFrame.origin.x = self.frame.size.width - kComposerBackgroundRightPadding - sendButtonFrame.size.width;
+    sendButtonFrame.origin.y = kComposerBackgroundRightPadding;
+    self.sendButton.frame = sendButtonFrame;
+    self.sendButton.autoresizingMask = UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleLeftMargin;
     self.sendButton.layer.cornerRadius = 5;
     [self.sendButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
     [self.sendButton setTitleColor:[UIColor colorWithRed:210/255.0 green:210/255.0 blue:210/255.0 alpha:1.0] forState:UIControlStateHighlighted];
     [self.sendButton setTitleColor:[UIColor grayColor] forState:UIControlStateSelected];
     [self.sendButton setBackgroundColor:[UIColor orangeColor]];
+    [self.sendButton setTitle:@"Send" forState:UIControlStateNormal];
+    self.sendButton.titleLabel.font = [UIFont boldSystemFontOfSize:14];
 
+    
+    CGRect messageTextViewFrame = self.bounds;
+    messageTextViewFrame.origin.x = kComposerBackgroundLeftPadding;
+    messageTextViewFrame.origin.y = kComposerBackgroundTopPadding;
+    messageTextViewFrame.size.width = self.frame.size.width - kComposerBackgroundLeftPadding - kComposerTextViewButtonBetweenPadding - sendButtonFrame.size.width - kComposerBackgroundRightPadding;
+    messageTextViewFrame.size.height = 34;
+    self.messageTextView.frame = messageTextViewFrame;
+    self.messageTextView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin;
     self.messageTextView.showsHorizontalScrollIndicator = NO;
     self.messageTextView.layer.cornerRadius = 5;
+    self.messageTextView.font = [UIFont systemFontOfSize:14];
+    self.messageTextView.delegate = self;
+
+    [self addNotifications];
     [self resizeTextViewForText:@"" animated:NO];
 }
 
@@ -136,7 +130,7 @@ float keyboardAnimationDuration = 0.25;
 
 - (void)textViewDidBeginEditing:(UITextView*)textView {
     CGRect frame = self.frame;
-    frame.origin.y = ([self currentScreenHeight] - [self currentKeyboardHeight]) - frame.size.height;
+    frame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - frame.size.height;
     
     [UIView animateWithDuration:keyboardAnimationDuration animations:^{
         self.frame = frame;
@@ -149,7 +143,7 @@ float keyboardAnimationDuration = 0.25;
 
 - (void)textViewDidEndEditing:(UITextView*)textView {
     CGRect frame = self.frame;
-    frame.origin.y = [self currentScreenHeight] - self.frame.size.height;
+    frame.origin.y = [self currentScreenSize].height - self.frame.size.height;
     
     [UIView animateWithDuration:keyboardAnimationDuration animations:^{
         self.frame = frame;
@@ -164,8 +158,11 @@ float keyboardAnimationDuration = 0.25;
 #pragma mark - Rotation
 - (void)handleRotation:(NSNotification*)notification {
     if ([self.messageTextView isFirstResponder]) {
+        // TODO if MessageComposerView was init from frame, when rotating this method gets called but the UIInterfaceRotation
+        // still hasn't updated and the view itself hasn't yet updated causing odd behaviour.
+        UIDeviceOrientation orientation = [[notification object]orientation];
         CGRect frame = self.frame;
-        frame.origin.y = ([self currentScreenHeight] - [self currentKeyboardHeight]) - frame.size.height;
+        frame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - frame.size.height;
         self.frame = frame;
         
         // After rotating we want to make sure that the UITextView tightly wraps the text so we resize it. In this
@@ -208,7 +205,7 @@ float keyboardAnimationDuration = 0.25;
     // Recalculate composer view container frame
     CGRect newContainerFrame = self.frame;
     newContainerFrame.size.height = newSize.height + kComposerBackgroundTopPadding + kComposerBackgroundBottomPadding;
-    newContainerFrame.origin.y = ([self currentScreenHeight] - [self currentKeyboardHeight]) - newContainerFrame.size.height;
+    newContainerFrame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - newContainerFrame.size.height;
     
     // Recalculate send button frame
     CGRect newSendButtonFrame = self.sendButton.frame;
@@ -266,30 +263,54 @@ float keyboardAnimationDuration = 0.25;
 
 
 #pragma mark - Utils
-- (UIInterfaceOrientation)currentOrientation {
+- (UIInterfaceOrientation)currentInterfaceOrientation {
     return [UIApplication sharedApplication].statusBarOrientation;
 }
 
 - (float)currentKeyboardHeight {
-    float keyboardHeight;
+    return [self currentKeyboardHeightInInterfaceOrientation:[self currentInterfaceOrientation]];
+}
+
+- (float)currentKeyboardHeightInDeviceOrientation:(UIDeviceOrientation)orientation {
     // TODO: this is very bad... another solution is needed or this will break on international keyboards etc.
-    if (UIInterfaceOrientationIsPortrait([self currentOrientation])) {
-        keyboardHeight = 216;
+    if (UIDeviceOrientationIsLandscape(orientation)) {
+        return 162;
     } else {
-        keyboardHeight = 162;
+        return 216;
     }
-    return keyboardHeight;
 }
 
-- (float)currentScreenHeight {
-    return [self sizeInOrientation:[self currentOrientation]].height;
+- (float)currentKeyboardHeightInInterfaceOrientation:(UIInterfaceOrientation)orientation {
+    // TODO: this is very bad... another solution is needed or this will break on international keyboards etc.
+    if (UIInterfaceOrientationIsLandscape(orientation)) {
+        return 162;
+    } else {
+        return 216;
+    }
 }
 
-- (CGSize) sizeInOrientation:(UIInterfaceOrientation)orientation {
+- (CGSize)currentScreenSize {
+    return [self currentScreenSizeInInterfaceOrientation:[self currentInterfaceOrientation]];
+}
+
+- (CGSize)currentScreenSizeInInterfaceOrientation:(UIInterfaceOrientation)orientation {
     // http://stackoverflow.com/a/7905540/740474
     CGSize size = [UIScreen mainScreen].bounds.size;
     UIApplication *application = [UIApplication sharedApplication];
     if (UIInterfaceOrientationIsLandscape(orientation)) {
+        size = CGSizeMake(size.height, size.width);
+    }
+    if (application.statusBarHidden == NO) {
+        size.height -= MIN(application.statusBarFrame.size.width, application.statusBarFrame.size.height);
+    }
+    return size;
+}
+
+- (CGSize)currentScreenSizeInDeviceOrientation:(UIDeviceOrientation)orientation {
+    // http://stackoverflow.com/a/7905540/740474
+    CGSize size = [UIScreen mainScreen].bounds.size;
+    UIApplication *application = [UIApplication sharedApplication];
+    if (UIDeviceOrientationIsLandscape(orientation)) {
         size = CGSizeMake(size.height, size.width);
     }
     if (application.statusBarHidden == NO) {
