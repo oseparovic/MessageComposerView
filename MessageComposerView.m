@@ -43,12 +43,9 @@ float keyboardAnimationDuration = 0.25;
     self = [super initWithFrame:frame];
     if (self) {
         // Initialization code
-        
-        // TODO: initializing programatically, instead of from the XIB for some reason causes self.frame to NOT yet be resized at the point when
-        // a UIDeviceOrientationDidChangeNotification notification is caught. Initializing from the NIB has the opposite behaviour. Could be
-        // something to do with the autoresizingMask or a property not transferred over from the XIB...
         self.frame = frame;
         self.backgroundColor = [UIColor lightGrayColor];
+        self.autoresizesSubviews = YES;
         self.autoresizingMask = UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleWidth;
         self.userInteractionEnabled = YES;
         self.multipleTouchEnabled = NO;
@@ -275,7 +272,7 @@ float keyboardAnimationDuration = 0.25;
 
 - (float)currentKeyboardHeight {
     float keyboardHeight;
-    // TODO: this is very bad... another solution is need or this will break on internation keyboards etc.
+    // TODO: this is very bad... another solution is needed or this will break on international keyboards etc.
     if (UIInterfaceOrientationIsPortrait([self currentOrientation])) {
         keyboardHeight = 216;
     } else {
