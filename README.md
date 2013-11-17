@@ -18,21 +18,25 @@ In your header file:
 
 Example:
 
-
     #import "MessageComposerView.h"
     @interface ViewController : UIViewController<MessageComposerViewDelegate>
     @property (nonatomic, strong) MessageComposerView *messageComposerView;
     @end
 
-In your class file, instantiate and add `MessageComposerView` to the bottom of your view controller.
-For the time being you **MUST** instantiate via `loadNibNamed`. `initWithFrame` still has unexpected behaviour on rotation ([stackoverflow post](http://stackoverflow.com/questions/19974246/uiinterfaceorientation-not-yet-updated-when-uideviceorientationdidchangenotifica])). Example: 
+In your class file, instantiate and add `MessageComposerView` to the bottom of your view controller. You can do this 
+automatically via `loadNibNamed:`
 
     self.messageComposerView = [[NSBundle mainBundle] loadNibNamed:@"MessageComposerView" owner:nil options:nil][0];
     self.messageComposerView.delegate = self;
-    self.messageComposerView.frame = CGRectMake(0,
-                                                self.view.frame.size.height - self.messageComposerView.frame.size.height,
-                                                self.messageComposerView.frame.size.width,
-                                                self.messageComposerView.frame.size.height);
+    [self.view addSubview:self.messageComposerView];
+    
+Or manually via `initWithFrame:`
+
+    // standard size is (320, 54) but a custom size will also be respected
+    float defaultWidth  = 320;
+    float defaultHeight = 54;
+    CGRect subviewFrame = CGRectMake(0, self.view.frame.size.height-defaultHeight, defaultWidth, defaultHeight);
+    self.messageComposerView = [[MessageComposerView alloc] initWithFrame:subviewFrame];
     [self.view addSubview:self.messageComposerView];
 
 ####Delegation
@@ -50,9 +54,10 @@ The `MessageComposerViewDelegate` has several delegate methods:
 How it works
 ------------
 
-MessageComposerView tries to avoid hooking into `UIKeyboardWillShowNotification` and `UIKeyboardDidShowNotification` as I found them to be at times excessive and difficult to properly manipulate, especially when it came to rotation. Instead the `UIKeyboardWillShowNotification` notification is used solely to dynamically determine the keyboard animation duration on your device before any animations occur.
+MessageComposerView tries to avoid hooking into `UIKeyboardWillShowNotification` and `UIKeyboardDidShowNotification` as I found them to be at times excessive and difficult to properly manipulate, especially when it came to rotation.
+Instead the `UIKeyboardWillShowNotification` notification is used solely to dynamically determine the keyboard animation duration on your device before any animations occur.
 
-The actual resizing of the views is handled via the `UITextViewTextDidChangeNotification` notification and through the following `UITextViewDelegate` methods:
+The actual resizing of the views is handled via `layoutSubviews` and through the following `UITextViewDelegate` methods:
 
 * `- (void)textViewDidBeginEditing:(UITextView*)textView`
 * `- (void)textViewDidEndEditing:(UITextView*)textView` 
