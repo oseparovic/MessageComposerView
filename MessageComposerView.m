@@ -35,20 +35,19 @@ const int kComposerBackgroundBottomPadding = 10;
 const int kComposerBackgroundLeftPadding = 10;
 const int kComposerTextViewButtonBetweenPadding = 10;
 
-// Default animation time for 5 <= iOS < 7. Used as a default but should be overwritten by first keyboard notification.
+// Default animation time for 5 <= iOS < 7. Should be overwritten by first keyboard notification.
 float keyboardAnimationDuration = 0.25;
 
-- (id)initWithFrame:(CGRect)frame
-{
+- (id)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
         // Initialization code
-        self.frame = frame;
         self.sendButton = [[UIButton alloc] initWithFrame:CGRectZero];
+        [self.sendButton addTarget:self action:@selector(sendClicked:) forControlEvents:UIControlEventTouchUpInside];
         self.messageTextView = [[UITextView alloc] initWithFrame:CGRectZero];
         [self setup];
-        [self addSubview:self.sendButton];
-        [self addSubview:self.messageTextView];
+        [self insertSubview:self.sendButton aboveSubview:self];
+        [self insertSubview:self.messageTextView aboveSubview:self];
 
     }
     return self;
@@ -102,19 +101,34 @@ float keyboardAnimationDuration = 0.25;
     [self resizeTextViewForText:@"" animated:NO];
 }
 
+- (void)layoutSubviews {
+    // Due to inconsistent handling of rotation when receiving UIDeviceOrientationDidChange notifications
+    // ( see http://stackoverflow.com/q/19974246/740474 ) rotation handling is done here.
+    
+    // In cases where the height remains the same after a rotation this code is needed as resizeTextViewForText
+    // will not do any configuration.
+    CGRect frame = self.frame;
+    frame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - frame.size.height;
+    self.frame = frame;
+    
+    // The view is already animating as part of the rotationso we just have to make sure it
+    // snaps to the right place and resizes the textView to wrap the text with the new width. Changing
+    // to add an additional anmiation will overload the animation and make it look like someone is
+    // shuffling a deck of cards.
+    [self resizeTextViewForText:self.messageTextView.text animated:NO];
+}
+
 
 #pragma mark - NSNotification
 - (void)addNotifications {
     NSNotificationCenter* defaultCenter = [NSNotificationCenter defaultCenter];
     [defaultCenter addObserver:self selector:@selector(textViewTextDidChange:) name:UITextViewTextDidChangeNotification object:self.messageTextView];
-    [defaultCenter addObserver:self selector:@selector(handleRotation:) name:UIDeviceOrientationDidChangeNotification object:nil];
     [defaultCenter addObserver:self selector:@selector(keyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
 }
 
 - (void)removeNotifications {
     NSNotificationCenter* defaultCenter = [NSNotificationCenter defaultCenter];
     [defaultCenter removeObserver:self name:UITextViewTextDidChangeNotification object:self.messageTextView];
-    [defaultCenter removeObserver:self name:UIDeviceOrientationDidChangeNotification object:nil];
     [defaultCenter removeObserver:self name:UIKeyboardWillShowNotification object:nil];
 }
 
@@ -124,7 +138,7 @@ float keyboardAnimationDuration = 0.25;
     NSString* newText = self.messageTextView.text;
     [self resizeTextViewForText:newText animated:YES];
     
-    if(self.delegate && [self.delegate respondsToSelector:@selector(messageComposerUserTyping)])
+    if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerUserTyping)])
         [self.delegate messageComposerUserTyping];
 }
 
@@ -155,28 +169,6 @@ float keyboardAnimationDuration = 0.25;
 }
 
 
-#pragma mark - Rotation
-- (void)handleRotation:(NSNotification*)notification {
-    if ([self.messageTextView isFirstResponder]) {
-        // TODO if MessageComposerView was init from frame, when rotating this method gets called but the UIInterfaceRotation
-        // still hasn't updated and the view itself hasn't yet updated causing odd behaviour.
-        UIDeviceOrientation orientation = [[notification object]orientation];
-        CGRect frame = self.frame;
-        frame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - frame.size.height;
-        self.frame = frame;
-        
-        // After rotating we want to make sure that the UITextView tightly wraps the text so we resize it. In this
-        // case we don't want to animate because we're already animating as part of the the rotation and don't want
-        // to overload the animation and make it look like someone is shuffling a deck of cards.
-        [self resizeTextViewForText:self.messageTextView.text animated:NO];
-        
-        if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
-            [self.delegate messageComposerFrameDidChange:self.frame withAnimationDuration:keyboardAnimationDuration];
-        }
-    }
-}
-
-
 #pragma mark - Keyboard Notifications
 - (void)keyboardWillShow:(NSNotification*)notification {
     // Because keyboard animation time varies by iOS version, and we don't want to build the library
@@ -197,7 +189,7 @@ float keyboardAnimationDuration = 0.25;
     CGSize oldSize = self.messageTextView.frame.size;
     CGSize newSize = [self.messageTextView sizeThatFits:CGSizeMake(fixedWidth, MAXFLOAT)];
     
-    // If the height doesn't need to change skip reconfiguration
+    // If the height doesn't need to change skip reconfiguration.
     if (oldSize.height == newSize.height) {
         return;
     }
@@ -264,19 +256,16 @@ float keyboardAnimationDuration = 0.25;
 
 #pragma mark - Utils
 - (UIInterfaceOrientation)currentInterfaceOrientation {
+    // Returns the orientation of the Interface NOT the Device. The two do not happen in exact unison so
+    // this point is important.
     return [UIApplication sharedApplication].statusBarOrientation;
 }
 
 - (float)currentKeyboardHeight {
-    return [self currentKeyboardHeightInInterfaceOrientation:[self currentInterfaceOrientation]];
-}
-
-- (float)currentKeyboardHeightInDeviceOrientation:(UIDeviceOrientation)orientation {
-    // TODO: this is very bad... another solution is needed or this will break on international keyboards etc.
-    if (UIDeviceOrientationIsLandscape(orientation)) {
-        return 162;
+    if ([self.messageTextView isFirstResponder]) {
+        return [self currentKeyboardHeightInInterfaceOrientation:[self currentInterfaceOrientation]];
     } else {
-        return 216;
+        return 0;
     }
 }
 
@@ -306,19 +295,6 @@ float keyboardAnimationDuration = 0.25;
     return size;
 }
 
-- (CGSize)currentScreenSizeInDeviceOrientation:(UIDeviceOrientation)orientation {
-    // http://stackoverflow.com/a/7905540/740474
-    CGSize size = [UIScreen mainScreen].bounds.size;
-    UIApplication *application = [UIApplication sharedApplication];
-    if (UIDeviceOrientationIsLandscape(orientation)) {
-        size = CGSizeMake(size.height, size.width);
-    }
-    if (application.statusBarHidden == NO) {
-        size.height -= MIN(application.statusBarFrame.size.width, application.statusBarFrame.size.height);
-    }
-    return size;
-}
-
 - (void)startEditing {
     [self.messageTextView becomeFirstResponder];
 }
@@ -326,4 +302,5 @@ float keyboardAnimationDuration = 0.25;
 - (void)finishEditing {
     [self.messageTextView resignFirstResponder];
 }
+
 @end
