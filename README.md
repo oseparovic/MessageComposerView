@@ -24,7 +24,8 @@ Example:
     @property (nonatomic, strong) MessageComposerView *messageComposerView;
     @end
 
-In your class file, instantiate and add `MessageComposerView` to the bottom of your view controller. For the time being you **MUST** instantiate via `loadNibNamed`. `initWithFrame` still has unexpected behaviour on rotation. Example: 
+In your class file, instantiate and add `MessageComposerView` to the bottom of your view controller.
+For the time being you **MUST** instantiate via `loadNibNamed`. `initWithFrame` still has unexpected behaviour on rotation ([stackoverflow post](http://stackoverflow.com/questions/19974246/uiinterfaceorientation-not-yet-updated-when-uideviceorientationdidchangenotifica])). Example: 
 
     self.messageComposerView = [[NSBundle mainBundle] loadNibNamed:@"MessageComposerView" owner:nil options:nil][0];
     self.messageComposerView.delegate = self;
