@@ -105,17 +105,28 @@ float keyboardAnimationDuration = 0.25;
     // Due to inconsistent handling of rotation when receiving UIDeviceOrientationDidChange notifications
     // ( see http://stackoverflow.com/q/19974246/740474 ) rotation handling is done here.
     
-    // In cases where the height remains the same after a rotation this code is needed as resizeTextViewForText
-    // will not do any configuration.
-    CGRect frame = self.frame;
-    frame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - frame.size.height;
-    self.frame = frame;
+    CGFloat fixedWidth = self.messageTextView.frame.size.width;
+    CGSize oldSize = self.messageTextView.frame.size;
+    CGSize newSize = [self.messageTextView sizeThatFits:CGSizeMake(fixedWidth, MAXFLOAT)];
     
-    // The view is already animating as part of the rotationso we just have to make sure it
-    // snaps to the right place and resizes the textView to wrap the text with the new width. Changing
-    // to add an additional anmiation will overload the animation and make it look like someone is
-    // shuffling a deck of cards.
-    [self resizeTextViewForText:self.messageTextView.text animated:NO];
+    if (oldSize.height == newSize.height) {
+        // In cases where the height remains the same after a rotation (AKA number of lines does not change)
+        // this code is needed as resizeTextViewForText will not do any configuration.
+        CGRect frame = self.frame;
+        frame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - frame.size.height;
+        self.frame = frame;
+        
+        // Even though the height didn't change the origin did so notify delegates
+        if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
+            [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:keyboardAnimationDuration];
+        }
+    } else {
+        // The view is already animating as part of the rotationso we just have to make sure it
+        // snaps to the right place and resizes the textView to wrap the text with the new width. Changing
+        // to add an additional anmiation will overload the animation and make it look like someone is
+        // shuffling a deck of cards.
+        [self resizeTextViewForText:self.messageTextView.text animated:NO];
+    }
 }
 
 
