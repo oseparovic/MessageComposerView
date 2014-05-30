@@ -49,12 +49,18 @@ int keyboardOffset;
     if (self) {
         // Initialization code
         keyboardOffset = offset;
+        
+        // alloc necessary elements
         self.sendButton = [[UIButton alloc] initWithFrame:CGRectZero];
         [self.sendButton addTarget:self action:@selector(sendClicked:) forControlEvents:UIControlEventTouchUpInside];
         self.messageTextView = [[UITextView alloc] initWithFrame:CGRectZero];
+        
+        // configure elements
         [self setup];
+        
+        // insert elements above MessageComposerView
         [self insertSubview:self.sendButton aboveSubview:self];
-        [self insertSubview:self.messageTextView aboveSubview:self];        
+        [self insertSubview:self.messageTextView aboveSubview:self];
     }
     return self;
 }
@@ -306,7 +312,7 @@ int keyboardOffset;
     if (UIInterfaceOrientationIsLandscape(orientation)) {
         size = CGSizeMake(size.height, size.width);
     }
-    if (application.statusBarHidden == NO && ![[[UIDevice currentDevice] systemVersion] isEqualToString: @"7.0"]) {
+    if (application.statusBarHidden == NO && !([[[UIDevice currentDevice] systemVersion] floatValue] >= 7.0)) {
         // if the status bar is not hidden subtract its height from the screensize.
         // NOTE: as of iOS 7 the status bar overlaps the application rather than sits on top of it, so hidden or not
         // its height is irrelevant in our position calculations.
