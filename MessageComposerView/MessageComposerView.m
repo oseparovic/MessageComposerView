@@ -35,20 +35,26 @@ const int kComposerBackgroundBottomPadding = 10;
 const int kComposerBackgroundLeftPadding = 10;
 const int kComposerTextViewButtonBetweenPadding = 10;
 
-// Default animation time for 5 <= iOS < 7. Should be overwritten by first keyboard notification.
+// Default animation time for 5 <= iOS <= 7. Should be overwritten by first keyboard notification.
 float keyboardAnimationDuration = 0.25;
+int keyboardAnimationCurve = 7;
+int keyboardOffset;
 
 - (id)initWithFrame:(CGRect)frame {
+    return [self initWithFrame:frame andKeyboardOffset:0];
+}
+
+- (id)initWithFrame:(CGRect)frame andKeyboardOffset:(int)offset {
     self = [super initWithFrame:frame];
     if (self) {
         // Initialization code
+        keyboardOffset = offset;
         self.sendButton = [[UIButton alloc] initWithFrame:CGRectZero];
         [self.sendButton addTarget:self action:@selector(sendClicked:) forControlEvents:UIControlEventTouchUpInside];
         self.messageTextView = [[UITextView alloc] initWithFrame:CGRectZero];
         [self setup];
         [self insertSubview:self.sendButton aboveSubview:self];
-        [self insertSubview:self.messageTextView aboveSubview:self];
-
+        [self insertSubview:self.messageTextView aboveSubview:self];        
     }
     return self;
 }
@@ -83,7 +89,6 @@ float keyboardAnimationDuration = 0.25;
     [self.sendButton setBackgroundColor:[UIColor orangeColor]];
     [self.sendButton setTitle:@"Send" forState:UIControlStateNormal];
     self.sendButton.titleLabel.font = [UIFont boldSystemFontOfSize:14];
-
     
     CGRect messageTextViewFrame = self.bounds;
     messageTextViewFrame.origin.x = kComposerBackgroundLeftPadding;
@@ -96,7 +101,7 @@ float keyboardAnimationDuration = 0.25;
     self.messageTextView.layer.cornerRadius = 5;
     self.messageTextView.font = [UIFont systemFontOfSize:14];
     self.messageTextView.delegate = self;
-
+    
     [self addNotifications];
     [self resizeTextViewForText:@"" animated:NO];
 }
@@ -104,7 +109,6 @@ float keyboardAnimationDuration = 0.25;
 - (void)layoutSubviews {
     // Due to inconsistent handling of rotation when receiving UIDeviceOrientationDidChange notifications
     // ( see http://stackoverflow.com/q/19974246/740474 ) rotation handling is done here.
-    
     CGFloat fixedWidth = self.messageTextView.frame.size.width;
     CGSize oldSize = self.messageTextView.frame.size;
     CGSize newSize = [self.messageTextView sizeThatFits:CGSizeMake(fixedWidth, MAXFLOAT)];
@@ -113,7 +117,7 @@ float keyboardAnimationDuration = 0.25;
         // In cases where the height remains the same after a rotation (AKA number of lines does not change)
         // this code is needed as resizeTextViewForText will not do any configuration.
         CGRect frame = self.frame;
-        frame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - frame.size.height;
+        frame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - frame.size.height - keyboardOffset;
         self.frame = frame;
         
         // Even though the height didn't change the origin did so notify delegates
@@ -123,7 +127,7 @@ float keyboardAnimationDuration = 0.25;
     } else {
         // The view is already animating as part of the rotationso we just have to make sure it
         // snaps to the right place and resizes the textView to wrap the text with the new width. Changing
-        // to add an additional anmiation will overload the animation and make it look like someone is
+        // to add an additional animation will overload the animation and make it look like someone is
         // shuffling a deck of cards.
         [self resizeTextViewForText:self.messageTextView.text animated:NO];
     }
@@ -155,11 +159,13 @@ float keyboardAnimationDuration = 0.25;
 
 - (void)textViewDidBeginEditing:(UITextView*)textView {
     CGRect frame = self.frame;
-    frame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - frame.size.height;
+    frame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - frame.size.height - keyboardOffset;
     
-    [UIView animateWithDuration:keyboardAnimationDuration animations:^{
-        self.frame = frame;
-    }];
+    [UIView animateWithDuration:keyboardAnimationDuration
+                          delay:0.0
+                        options:(keyboardAnimationCurve << 16)
+                     animations:^{self.frame = frame;}
+                     completion:nil];
     
     if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
         [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:keyboardAnimationDuration];
@@ -168,11 +174,13 @@ float keyboardAnimationDuration = 0.25;
 
 - (void)textViewDidEndEditing:(UITextView*)textView {
     CGRect frame = self.frame;
-    frame.origin.y = [self currentScreenSize].height - self.frame.size.height;
+    frame.origin.y = [self currentScreenSize].height - self.frame.size.height - keyboardOffset;
     
-    [UIView animateWithDuration:keyboardAnimationDuration animations:^{
-        self.frame = frame;
-    }];
+    [UIView animateWithDuration:keyboardAnimationDuration
+                          delay:0.0
+                        options:(keyboardAnimationCurve << 16)
+                     animations:^{self.frame = frame;}
+                     completion:nil];
     
     if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
         [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:keyboardAnimationDuration];
@@ -182,11 +190,12 @@ float keyboardAnimationDuration = 0.25;
 
 #pragma mark - Keyboard Notifications
 - (void)keyboardWillShow:(NSNotification*)notification {
-    // Because keyboard animation time varies by iOS version, and we don't want to build the library
+    // Because keyboard animation time and cure vary by iOS version, and we don't want to build the library
     // on top of spammy keyboard notifications we use UIKeyboardWillShowNotification ONLY to dynamically set our
     // animation duration. As a UIKeyboardWillShowNotification is fired BEFORE textViewDidBeginEditing
-    // is triggered we can use the following value for all of animations including the first.
+    // is triggered we can use the following values for all of animations including the first.
     keyboardAnimationDuration = [[notification userInfo][UIKeyboardAnimationDurationUserInfoKey] floatValue];
+    keyboardAnimationCurve = [[notification userInfo][UIKeyboardAnimationCurveUserInfoKey] intValue];
 }
 
 
@@ -205,10 +214,10 @@ float keyboardAnimationDuration = 0.25;
         return;
     }
     
-    // Recalculate composer view container frame
+    // Recalculate MessageComposerView container frame
     CGRect newContainerFrame = self.frame;
     newContainerFrame.size.height = newSize.height + kComposerBackgroundTopPadding + kComposerBackgroundBottomPadding;
-    newContainerFrame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - newContainerFrame.size.height;
+    newContainerFrame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - newContainerFrame.size.height - keyboardOffset;;
     
     // Recalculate send button frame
     CGRect newSendButtonFrame = self.sendButton.frame;
@@ -254,14 +263,10 @@ float keyboardAnimationDuration = 0.25;
         [self.delegate messageComposerSendMessageClickedWithMessage:self.messageTextView.text];
     }
     
-    if ([self.messageTextView isFirstResponder]) {
-        [self.messageTextView setText:@""];
-    } else {
-        [self.messageTextView setText:@""];
-        // Manually trigger the textViewDidChange method as setting the text when the messageTextView is not first responder the
-        // UITextViewTextDidChangeNotification notification does not get fired.
-        [self textViewTextDidChange:nil];        
-    }
+    [self.messageTextView setText:@""];
+    // Manually trigger the textViewDidChange method as setting the text when the messageTextView is not first responder the
+    // UITextViewTextDidChangeNotification notification does not get fired.
+    [self textViewTextDidChange:nil];
 }
 
 
@@ -290,6 +295,7 @@ float keyboardAnimationDuration = 0.25;
 }
 
 - (CGSize)currentScreenSize {
+    // return the screen size with respect to the orientation
     return [self currentScreenSizeInInterfaceOrientation:[self currentInterfaceOrientation]];
 }
 
@@ -300,7 +306,11 @@ float keyboardAnimationDuration = 0.25;
     if (UIInterfaceOrientationIsLandscape(orientation)) {
         size = CGSizeMake(size.height, size.width);
     }
-    if (application.statusBarHidden == NO) {
+    if (application.statusBarHidden == NO && ![[[UIDevice currentDevice] systemVersion] isEqualToString: @"7.0"]) {
+        // if the status bar is not hidden subtract its height from the screensize.
+        // NOTE: as of iOS 7 the status bar overlaps the application rather than sits on top of it, so hidden or not
+        // its height is irrelevant in our position calculations.
+        // see http://blog.jaredsinclair.com/post/61507315630/wrestling-with-status-bars-and-navigation-bars-on-ios-7
         size.height -= MIN(application.statusBarFrame.size.width, application.statusBarFrame.size.height);
     }
     return size;

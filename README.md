@@ -39,6 +39,16 @@ Or manually via `initWithFrame:`
     self.messageComposerView = [[MessageComposerView alloc] initWithFrame:subviewFrame];
     [self.view addSubview:self.messageComposerView];
 
+If you need to offset the MessageComposerView from the keyboard by a certain fixed amount you can use `initWithFrame:andKeyboardOffset:` instead. This can be useful when using a `UITabBarController` or when adding your own custom elements below the MessageComposerView.
+
+    // standard size is (320, 54) but a custom size will also be respected
+    float defaultWidth  = 320;
+    float defaultHeight = 54;
+    CGRect subviewFrame = CGRectMake(0, 0, defaultWidth, defaultHeight);
+    self.messageComposerView = [[MessageComposerView alloc] initWithFrame:subviewFrame andKeyboardOffset:20];
+    self.messageComposerView.delegate = self;
+    [self.view addSubview:self.messageComposerView];
+
 ####Delegation
 The `MessageComposerViewDelegate` has several delegate methods:
 
