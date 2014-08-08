@@ -25,6 +25,7 @@
 @interface MessageComposerView()
 @property(nonatomic, strong) IBOutlet UITextView *messageTextView;
 @property(nonatomic, strong) IBOutlet UIButton *sendButton;
+@property(nonatomic) float keyboardHeight;
 @end
 
 @implementation MessageComposerView
@@ -145,12 +146,14 @@ int keyboardOffset;
     NSNotificationCenter* defaultCenter = [NSNotificationCenter defaultCenter];
     [defaultCenter addObserver:self selector:@selector(textViewTextDidChange:) name:UITextViewTextDidChangeNotification object:self.messageTextView];
     [defaultCenter addObserver:self selector:@selector(keyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
+    [defaultCenter addObserver:self selector:@selector(keyboardWillChangeFrame:) name:UIKeyboardWillChangeFrameNotification object:nil];
 }
 
 - (void)removeNotifications {
     NSNotificationCenter* defaultCenter = [NSNotificationCenter defaultCenter];
     [defaultCenter removeObserver:self name:UITextViewTextDidChangeNotification object:self.messageTextView];
     [defaultCenter removeObserver:self name:UIKeyboardWillShowNotification object:nil];
+    [defaultCenter removeObserver:self name:UIKeyboardWillChangeFrameNotification object:nil];
 }
 
 
@@ -204,6 +207,12 @@ int keyboardOffset;
     keyboardAnimationCurve = [[notification userInfo][UIKeyboardAnimationCurveUserInfoKey] intValue];
 }
 
+- (void)keyboardWillChangeFrame:(NSNotification *)notification {
+    CGRect rect = [[notification userInfo][UIKeyboardFrameEndUserInfoKey] CGRectValue];
+    CGRect converted = [self convertRect:rect fromView:nil];
+    self.keyboardHeight = converted.size.height;
+    [self setNeedsLayout];
+}
 
 #pragma mark - TextView Frame Manipulation
 - (void)resizeTextViewForText:(NSString*)text {
@@ -285,18 +294,9 @@ int keyboardOffset;
 
 - (float)currentKeyboardHeight {
     if ([self.messageTextView isFirstResponder]) {
-        return [self currentKeyboardHeightInInterfaceOrientation:[self currentInterfaceOrientation]];
+        return self.keyboardHeight;
     } else {
         return 0;
-    }
-}
-
-- (float)currentKeyboardHeightInInterfaceOrientation:(UIInterfaceOrientation)orientation {
-    // TODO: this is very bad... another solution is needed or this will break on international keyboards etc.
-    if (UIInterfaceOrientationIsLandscape(orientation)) {
-        return 162;
-    } else {
-        return 216;
     }
 }
 
