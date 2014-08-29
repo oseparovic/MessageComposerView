@@ -23,24 +23,16 @@
 #import "MessageComposerView.h"
 
 @interface MessageComposerView()
-@property(nonatomic, strong) IBOutlet UITextView *messageTextView;
-@property(nonatomic, strong) IBOutlet UIButton *sendButton;
-@property(nonatomic) float keyboardHeight;
+@property(nonatomic, strong) UITextView *messageTextView;
+@property(nonatomic, strong) UIButton *sendButton;
+@property(nonatomic) CGFloat keyboardHeight;
+@property(nonatomic) CGFloat keyboardAnimationDuration;
+@property(nonatomic) NSInteger keyboardAnimationCurve;
+@property(nonatomic) NSInteger keyboardOffset;
+@property(nonatomic) UIEdgeInsets composerBackgroundInsets;
 @end
 
 @implementation MessageComposerView
-
-// kComposerBackgroundTopPadding is used as a minimum value of top padding.
-float kComposerBackgroundTopPadding = 10;
-const float kComposerBackgroundRightPadding = 10;
-const float kComposerBackgroundBottomPadding = 10;
-const float kComposerBackgroundLeftPadding = 10;
-const float kComposerTextViewButtonBetweenPadding = 10;
-
-// Default animation time for 5 <= iOS <= 7. Should be overwritten by first keyboard notification.
-float keyboardAnimationDuration = 0.25;
-int keyboardAnimationCurve = 7;
-int keyboardOffset;
 
 - (id)initWithFrame:(CGRect)frame {
     return [self initWithFrame:frame andKeyboardOffset:0];
@@ -49,9 +41,14 @@ int keyboardOffset;
 - (id)initWithFrame:(CGRect)frame andKeyboardOffset:(int)offset {
     self = [super initWithFrame:frame];
     if (self) {
-        // Initialization code
-        keyboardOffset = offset;
-        kComposerBackgroundTopPadding = MAX(kComposerBackgroundTopPadding, frame.size.height - kComposerBackgroundBottomPadding - 34);
+        // top inset is used as a minimum value of top padding.
+        _composerBackgroundInsets = UIEdgeInsetsMake(10, 10, 10, 10);
+        
+        // Default animation time for 5 <= iOS <= 7. Should be overwritten by first keyboard notification.
+        _keyboardAnimationDuration = 0.25;
+        _keyboardAnimationCurve = 7;
+        _keyboardOffset = offset;
+        _composerBackgroundInsets.top = MAX(_composerBackgroundInsets.top, frame.size.height - _composerBackgroundInsets.bottom - 34);
         
         // alloc necessary elements
         self.sendButton = [[UIButton alloc] initWithFrame:CGRectZero];
@@ -82,8 +79,8 @@ int keyboardOffset;
     CGRect sendButtonFrame = self.bounds;
     sendButtonFrame.size.width = 50;
     sendButtonFrame.size.height = 34;
-    sendButtonFrame.origin.x = self.frame.size.width - kComposerBackgroundRightPadding - sendButtonFrame.size.width;
-    sendButtonFrame.origin.y = self.bounds.size.height - (kComposerBackgroundBottomPadding + sendButtonFrame.size.height);
+    sendButtonFrame.origin.x = self.frame.size.width - _composerBackgroundInsets.right - sendButtonFrame.size.width;
+    sendButtonFrame.origin.y = self.bounds.size.height - (_composerBackgroundInsets.bottom + sendButtonFrame.size.height);
     self.sendButton.frame = sendButtonFrame;
     self.sendButton.autoresizingMask = UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleLeftMargin;
     self.sendButton.layer.cornerRadius = 5;
@@ -95,9 +92,9 @@ int keyboardOffset;
     self.sendButton.titleLabel.font = [UIFont boldSystemFontOfSize:14];
     
     CGRect messageTextViewFrame = self.bounds;
-    messageTextViewFrame.origin.x = kComposerBackgroundLeftPadding;
-    messageTextViewFrame.origin.y = kComposerBackgroundTopPadding;
-    messageTextViewFrame.size.width = self.frame.size.width - kComposerBackgroundLeftPadding - kComposerTextViewButtonBetweenPadding - sendButtonFrame.size.width - kComposerBackgroundRightPadding;
+    messageTextViewFrame.origin.x = _composerBackgroundInsets.left;
+    messageTextViewFrame.origin.y = _composerBackgroundInsets.top;
+    messageTextViewFrame.size.width = self.frame.size.width - _composerBackgroundInsets.left - 10 - sendButtonFrame.size.width - _composerBackgroundInsets.right;
     messageTextViewFrame.size.height = 34;
     self.messageTextView.frame = messageTextViewFrame;
     self.messageTextView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin;
@@ -121,12 +118,12 @@ int keyboardOffset;
         // In cases where the height remains the same after a rotation (AKA number of lines does not change)
         // this code is needed as resizeTextViewForText will not do any configuration.
         CGRect frame = self.frame;
-        frame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - frame.size.height - keyboardOffset;
+        frame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - frame.size.height - _keyboardOffset;
         self.frame = frame;
         
         // Even though the height didn't change the origin did so notify delegates
         if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
-            [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:keyboardAnimationDuration];
+            [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:_keyboardAnimationDuration];
         }
     } else {
         // The view is already animating as part of the rotationso we just have to make sure it
@@ -165,31 +162,31 @@ int keyboardOffset;
 
 - (void)textViewDidBeginEditing:(UITextView*)textView {
     CGRect frame = self.frame;
-    frame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - frame.size.height - keyboardOffset;
+    frame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - frame.size.height - _keyboardOffset;
     
-    [UIView animateWithDuration:keyboardAnimationDuration
+    [UIView animateWithDuration:_keyboardAnimationDuration
                           delay:0.0
-                        options:(keyboardAnimationCurve << 16)
+                        options:(_keyboardAnimationCurve << 16)
                      animations:^{self.frame = frame;}
                      completion:nil];
     
     if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
-        [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:keyboardAnimationDuration];
+        [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:_keyboardAnimationDuration];
     }
 }
 
 - (void)textViewDidEndEditing:(UITextView*)textView {
     CGRect frame = self.frame;
-    frame.origin.y = [self currentScreenSize].height - self.frame.size.height - keyboardOffset;
+    frame.origin.y = [self currentScreenSize].height - self.frame.size.height - _keyboardOffset;
     
-    [UIView animateWithDuration:keyboardAnimationDuration
+    [UIView animateWithDuration:_keyboardAnimationDuration
                           delay:0.0
-                        options:(keyboardAnimationCurve << 16)
+                        options:(_keyboardAnimationCurve << 16)
                      animations:^{self.frame = frame;}
                      completion:nil];
     
     if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
-        [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:keyboardAnimationDuration];
+        [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:_keyboardAnimationDuration];
     }
 }
 
@@ -200,8 +197,8 @@ int keyboardOffset;
     // on top of spammy keyboard notifications we use UIKeyboardWillShowNotification ONLY to dynamically set our
     // animation duration. As a UIKeyboardWillShowNotification is fired BEFORE textViewDidBeginEditing
     // is triggered we can use the following values for all of animations including the first.
-    keyboardAnimationDuration = [[notification userInfo][UIKeyboardAnimationDurationUserInfoKey] floatValue];
-    keyboardAnimationCurve = [[notification userInfo][UIKeyboardAnimationCurveUserInfoKey] intValue];
+    _keyboardAnimationDuration = [[notification userInfo][UIKeyboardAnimationDurationUserInfoKey] floatValue];
+    _keyboardAnimationCurve = [[notification userInfo][UIKeyboardAnimationCurveUserInfoKey] intValue];
 }
 
 - (void)keyboardWillChangeFrame:(NSNotification *)notification {
@@ -228,21 +225,20 @@ int keyboardOffset;
     
     // Recalculate MessageComposerView container frame
     CGRect newContainerFrame = self.frame;
-    newContainerFrame.size.height = newSize.height + kComposerBackgroundTopPadding + kComposerBackgroundBottomPadding;
-    newContainerFrame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - newContainerFrame.size.height - keyboardOffset;;
+    newContainerFrame.size.height = newSize.height + _composerBackgroundInsets.top + _composerBackgroundInsets.bottom;
+    newContainerFrame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - newContainerFrame.size.height - _keyboardOffset;;
     
     // Recalculate send button frame
     CGRect newSendButtonFrame = self.sendButton.frame;
-    newSendButtonFrame.origin.y = newContainerFrame.size.height - (kComposerBackgroundBottomPadding + newSendButtonFrame.size.height);
-    
+    newSendButtonFrame.origin.y = newContainerFrame.size.height - (_composerBackgroundInsets.bottom + newSendButtonFrame.size.height);
     
     // Recalculate UITextView frame
     CGRect newTextViewFrame = self.messageTextView.frame;
     newTextViewFrame.size.height = newSize.height;
-    newTextViewFrame.origin.y = kComposerBackgroundTopPadding;
+    newTextViewFrame.origin.y = _composerBackgroundInsets.top;
     
     if (animated) {
-        [UIView animateWithDuration:keyboardAnimationDuration
+        [UIView animateWithDuration:_keyboardAnimationDuration
                               delay:0
                             options:UIViewAnimationOptionAllowUserInteraction
                          animations:^{
@@ -260,7 +256,7 @@ int keyboardOffset;
     }
     
     if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
-        [self.delegate messageComposerFrameDidChange:newContainerFrame withAnimationDuration:keyboardAnimationDuration];
+        [self.delegate messageComposerFrameDidChange:newContainerFrame withAnimationDuration:_keyboardAnimationDuration];
     }
 }
 
