@@ -23,14 +23,7 @@ Example:
     @property (nonatomic, strong) MessageComposerView *messageComposerView;
     @end
 
-In your class file, instantiate and add `MessageComposerView` to the bottom of your view controller. You can do this 
-automatically via `loadNibNamed:`
-
-    self.messageComposerView = [[NSBundle mainBundle] loadNibNamed:@"MessageComposerView" owner:nil options:nil][0];
-    self.messageComposerView.delegate = self;
-    [self.view addSubview:self.messageComposerView];
-    
-Or manually via `initWithFrame:`
+In your class file, instantiate and add `MessageComposerView` to the bottom of your view controller. You can do this via `initWithFrame:`
 
     // standard size is (320, 54) but a custom size will also be respected
     float defaultWidth  = 320;
