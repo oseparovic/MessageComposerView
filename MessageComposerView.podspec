@@ -2,7 +2,7 @@ Pod::Spec.new do |s|
   name               = "MessageComposerView"
   url                = "https://github.com/oseparovic/#{name}"
   git_url            = "#{url}.git"
-  version            = "1.1.2"
+  version            = "1.2.0"
 
   s.name             = name
   s.version          = version
