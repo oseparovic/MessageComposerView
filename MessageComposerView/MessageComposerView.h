@@ -39,8 +39,8 @@
 @property(nonatomic, strong) id<MessageComposerViewDelegate> delegate;
 // alternative initializer that allows the setting of the offset that the MessageComposerView will have
 // fromt the keyboard and the bottom of the screen.
-- (id)initWithFrame:(CGRect)frame andKeyboardOffset:(int)offset;
-- (id)initWithFrame:(CGRect)frame andKeyboardOffset:(int)offset andMaxHeight:(float)maxTVHeight;
+- (id)initWithFrame:(CGRect)frame andKeyboardOffset:(NSInteger)offset;
+- (id)initWithFrame:(CGRect)frame andKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight;
 - (IBAction)sendClicked:(id)sender;
 - (void)resizeTextViewForText:(NSString*)text;
 - (void)resizeTextViewForText:(NSString*)text animated:(BOOL)animated;

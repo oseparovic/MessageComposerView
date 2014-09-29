@@ -39,11 +39,11 @@
     return [self initWithFrame:frame andKeyboardOffset:0];
 }
 
-- (id)initWithFrame:(CGRect)frame andKeyboardOffset:(int)offset {
-    return [self initWithFrame:frame andKeyboardOffset:offset andMaxHeight:MAXFLOAT];
+- (id)initWithFrame:(CGRect)frame andKeyboardOffset:(NSInteger)offset {
+    return [self initWithFrame:frame andKeyboardOffset:offset andMaxHeight:CGFLOAT_MAX];
 }
 
-- (id)initWithFrame:(CGRect)frame andKeyboardOffset:(int)offset andMaxHeight:(float)maxTVHeight {
+- (id)initWithFrame:(CGRect)frame andKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight {
     self = [super initWithFrame:frame];
     if (self) {
         // top inset is used as a minimum value of top padding.
@@ -117,12 +117,10 @@
 - (void)layoutSubviews {
     // Due to inconsistent handling of rotation when receiving UIDeviceOrientationDidChange notifications
     // ( see http://stackoverflow.com/q/19974246/740474 ) rotation handling is done here.
-    CGFloat fixedWidth = self.messageTextView.frame.size.width;
-    CGSize oldSize = self.messageTextView.frame.size;
-    CGSize newSize = [self.messageTextView sizeThatFits:CGSizeMake(fixedWidth, CGFLOAT_MAX)];
-    newSize.height = MIN(_composerTVMaxHeight, newSize.height);
+    CGFloat oldHeight = self.messageTextView.frame.size.height;
+    CGFloat newHeight = [self sizeWithText:self.messageTextView.text];
     
-    if (oldSize.height == newSize.height) {
+    if (oldHeight == newHeight) {
         // In cases where the height remains the same after a rotation (AKA number of lines does not change)
         // this code is needed as resizeTextViewForText will not do any configuration.
         CGRect frame = self.frame;
@@ -134,7 +132,7 @@
             [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:_keyboardAnimationDuration];
         }
     } else {
-        // The view is already animating as part of the rotationso we just have to make sure it
+        // The view is already animating as part of the rotation so we just have to make sure it
         // snaps to the right place and resizes the textView to wrap the text with the new width. Changing
         // to add an additional animation will overload the animation and make it look like someone is
         // shuffling a deck of cards.
@@ -222,19 +220,17 @@
 }
 
 - (void)resizeTextViewForText:(NSString*)text animated:(BOOL)animated {
-    CGFloat fixedWidth = self.messageTextView.frame.size.width;
-    CGSize oldSize = self.messageTextView.frame.size;
-    CGSize newSize = [self.messageTextView sizeThatFits:CGSizeMake(fixedWidth, CGFLOAT_MAX)];
-    newSize.height = MIN(_composerTVMaxHeight, newSize.height);
+    CGFloat oldHeight = self.messageTextView.frame.size.height;
+    CGFloat newHeight = [self sizeWithText:text];
     
     // If the height doesn't need to change skip reconfiguration.
-    if (oldSize.height == newSize.height) {
+    if (oldHeight == newHeight) {
         return;
     }
     
     // Recalculate MessageComposerView container frame
     CGRect newContainerFrame = self.frame;
-    newContainerFrame.size.height = newSize.height + _composerBackgroundInsets.top + _composerBackgroundInsets.bottom;
+    newContainerFrame.size.height = newHeight + _composerBackgroundInsets.top + _composerBackgroundInsets.bottom;
     newContainerFrame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - newContainerFrame.size.height - _keyboardOffset;;
     
     // Recalculate send button frame
@@ -243,7 +239,7 @@
     
     // Recalculate UITextView frame
     CGRect newTextViewFrame = self.messageTextView.frame;
-    newTextViewFrame.size.height = newSize.height;
+    newTextViewFrame.size.height = newHeight;
     newTextViewFrame.origin.y = _composerBackgroundInsets.top;
     
     if (animated) {
@@ -279,8 +275,6 @@
     if(self.delegate) {
         [self.delegate messageComposerSendMessageClickedWithMessage:self.messageTextView.text];
     }
-    
-    
     
     [self.messageTextView setText:@""];
     // Manually trigger the textViewDidChange method as setting the text when the messageTextView is not first responder the
@@ -324,6 +318,12 @@
         size.height -= MIN(application.statusBarFrame.size.width, application.statusBarFrame.size.height);
     }
     return size;
+}
+
+- (CGFloat)sizeWithText:(NSString*)text {
+    CGFloat fixedWidth = self.messageTextView.frame.size.width;
+    CGSize newSize = [self.messageTextView sizeThatFits:CGSizeMake(fixedWidth, CGFLOAT_MAX)];
+    return MIN(_composerTVMaxHeight, newSize.height);
 }
 
 - (void)startEditing {
