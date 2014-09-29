@@ -30,6 +30,7 @@
 @property(nonatomic) NSInteger keyboardAnimationCurve;
 @property(nonatomic) NSInteger keyboardOffset;
 @property(nonatomic) UIEdgeInsets composerBackgroundInsets;
+@property(nonatomic) CGFloat composerTVMaxHeight;
 @end
 
 @implementation MessageComposerView
@@ -39,6 +40,10 @@
 }
 
 - (id)initWithFrame:(CGRect)frame andKeyboardOffset:(int)offset {
+    return [self initWithFrame:frame andKeyboardOffset:offset andMaxHeight:MAXFLOAT];
+}
+
+- (id)initWithFrame:(CGRect)frame andKeyboardOffset:(int)offset andMaxHeight:(float)maxTVHeight {
     self = [super initWithFrame:frame];
     if (self) {
         // top inset is used as a minimum value of top padding.
@@ -49,6 +54,7 @@
         _keyboardAnimationCurve = 7;
         _keyboardOffset = offset;
         _composerBackgroundInsets.top = MAX(_composerBackgroundInsets.top, frame.size.height - _composerBackgroundInsets.bottom - 34);
+        _composerTVMaxHeight = maxTVHeight;
         
         // alloc necessary elements
         self.sendButton = [[UIButton alloc] initWithFrame:CGRectZero];
@@ -102,6 +108,7 @@
     self.messageTextView.layer.cornerRadius = 5;
     self.messageTextView.font = [UIFont systemFontOfSize:14];
     self.messageTextView.delegate = self;
+    self.messageTextView.contentMode = UIViewContentModeTop;
     
     [self addNotifications];
     [self resizeTextViewForText:@"" animated:NO];
@@ -112,7 +119,8 @@
     // ( see http://stackoverflow.com/q/19974246/740474 ) rotation handling is done here.
     CGFloat fixedWidth = self.messageTextView.frame.size.width;
     CGSize oldSize = self.messageTextView.frame.size;
-    CGSize newSize = [self.messageTextView sizeThatFits:CGSizeMake(fixedWidth, MAXFLOAT)];
+    CGSize newSize = [self.messageTextView sizeThatFits:CGSizeMake(fixedWidth, CGFLOAT_MAX)];
+    newSize.height = MIN(_composerTVMaxHeight, newSize.height);
     
     if (oldSize.height == newSize.height) {
         // In cases where the height remains the same after a rotation (AKA number of lines does not change)
@@ -216,7 +224,8 @@
 - (void)resizeTextViewForText:(NSString*)text animated:(BOOL)animated {
     CGFloat fixedWidth = self.messageTextView.frame.size.width;
     CGSize oldSize = self.messageTextView.frame.size;
-    CGSize newSize = [self.messageTextView sizeThatFits:CGSizeMake(fixedWidth, MAXFLOAT)];
+    CGSize newSize = [self.messageTextView sizeThatFits:CGSizeMake(fixedWidth, CGFLOAT_MAX)];
+    newSize.height = MIN(_composerTVMaxHeight, newSize.height);
     
     // If the height doesn't need to change skip reconfiguration.
     if (oldSize.height == newSize.height) {
