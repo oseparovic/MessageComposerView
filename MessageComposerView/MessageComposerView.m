@@ -127,7 +127,7 @@
         
         // Even though the height didn't change the origin did so notify delegates
         if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
-            [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:_keyboardAnimationDuration];
+            [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:0];
         }
     } else {
         // The view is already animating as part of the rotation so we just have to make sure it
@@ -154,7 +154,7 @@
         [self scrollTextViewToBottom];
         
         if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
-            [self.delegate messageComposerFrameDidChange:newContainerFrame withAnimationDuration:_keyboardAnimationDuration];
+            [self.delegate messageComposerFrameDidChange:newContainerFrame withAnimationDuration:0];
         }
     }
 }
