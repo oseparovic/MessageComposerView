@@ -42,8 +42,6 @@
 - (id)initWithFrame:(CGRect)frame andKeyboardOffset:(NSInteger)offset;
 - (id)initWithFrame:(CGRect)frame andKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight;
 - (IBAction)sendClicked:(id)sender;
-- (void)resizeTextViewForText:(NSString*)text;
-- (void)resizeTextViewForText:(NSString*)text animated:(BOOL)animated;
 - (void)scrollTextViewToBottom;
 
 // To avoid exposing the UITextView and attempt to prevent bad practice, startEditing and finishEditing

@@ -111,18 +111,16 @@
     self.messageTextView.contentMode = UIViewContentModeTop;
     
     [self addNotifications];
-    [self resizeTextViewForText:@"" animated:NO];
 }
 
 - (void)layoutSubviews {
     // Due to inconsistent handling of rotation when receiving UIDeviceOrientationDidChange notifications
-    // ( see http://stackoverflow.com/q/19974246/740474 ) rotation handling is done here.
+    // ( see http://stackoverflow.com/q/19974246/740474 ) rotation handling and view resizing is done here.
     CGFloat oldHeight = self.messageTextView.frame.size.height;
     CGFloat newHeight = [self sizeWithText:self.messageTextView.text];
     
     if (oldHeight == newHeight) {
-        // In cases where the height remains the same after a rotation (AKA number of lines does not change)
-        // this code is needed as resizeTextViewForText will not do any configuration.
+        // In cases where the height remains the same after the text change/rotation only change the y origin
         CGRect frame = self.frame;
         frame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - frame.size.height - _keyboardOffset;
         self.frame = frame;
@@ -136,7 +134,28 @@
         // snaps to the right place and resizes the textView to wrap the text with the new width. Changing
         // to add an additional animation will overload the animation and make it look like someone is
         // shuffling a deck of cards.
-        [self resizeTextViewForText:self.messageTextView.text animated:NO];
+        // Recalculate MessageComposerView container frame
+        CGRect newContainerFrame = self.frame;
+        newContainerFrame.size.height = newHeight + _composerBackgroundInsets.top + _composerBackgroundInsets.bottom;
+        newContainerFrame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - newContainerFrame.size.height - _keyboardOffset;;
+        
+        // Recalculate send button frame
+        CGRect newSendButtonFrame = self.sendButton.frame;
+        newSendButtonFrame.origin.y = newContainerFrame.size.height - (_composerBackgroundInsets.bottom + newSendButtonFrame.size.height);
+        
+        // Recalculate UITextView frame
+        CGRect newTextViewFrame = self.messageTextView.frame;
+        newTextViewFrame.size.height = newHeight;
+        newTextViewFrame.origin.y = _composerBackgroundInsets.top;
+        
+        self.frame = newContainerFrame;
+        self.sendButton.frame = newSendButtonFrame;
+        self.messageTextView.frame = newTextViewFrame;
+        [self scrollTextViewToBottom];
+        
+        if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
+            [self.delegate messageComposerFrameDidChange:newContainerFrame withAnimationDuration:_keyboardAnimationDuration];
+        }
     }
 }
 
@@ -159,8 +178,7 @@
 
 #pragma mark - UITextViewDelegate
 - (void)textViewTextDidChange:(NSNotification*)notification {
-    NSString* newText = self.messageTextView.text;
-    [self resizeTextViewForText:newText animated:YES];
+    [self setNeedsLayout];
     
     if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerUserTyping)])
         [self.delegate messageComposerUserTyping];
@@ -214,61 +232,6 @@
     [self setNeedsLayout];
 }
 
-#pragma mark - TextView Frame Manipulation
-- (void)resizeTextViewForText:(NSString*)text {
-    [self resizeTextViewForText:text animated:NO];
-}
-
-- (void)resizeTextViewForText:(NSString*)text animated:(BOOL)animated {
-    CGFloat oldHeight = self.messageTextView.frame.size.height;
-    CGFloat newHeight = [self sizeWithText:text];
-    
-    // If the height doesn't need to change skip reconfiguration.
-    if (oldHeight == newHeight) {
-        return;
-    }
-    
-    // Recalculate MessageComposerView container frame
-    CGRect newContainerFrame = self.frame;
-    newContainerFrame.size.height = newHeight + _composerBackgroundInsets.top + _composerBackgroundInsets.bottom;
-    newContainerFrame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - newContainerFrame.size.height - _keyboardOffset;;
-    
-    // Recalculate send button frame
-    CGRect newSendButtonFrame = self.sendButton.frame;
-    newSendButtonFrame.origin.y = newContainerFrame.size.height - (_composerBackgroundInsets.bottom + newSendButtonFrame.size.height);
-    
-    // Recalculate UITextView frame
-    CGRect newTextViewFrame = self.messageTextView.frame;
-    newTextViewFrame.size.height = newHeight;
-    newTextViewFrame.origin.y = _composerBackgroundInsets.top;
-    
-    if (animated) {
-        [UIView animateWithDuration:_keyboardAnimationDuration
-                              delay:0
-                            options:UIViewAnimationOptionAllowUserInteraction
-                         animations:^{
-                             self.frame = newContainerFrame;
-                             self.sendButton.frame = newSendButtonFrame;
-                             self.messageTextView.frame = newTextViewFrame;
-                             [self.messageTextView setContentOffset:CGPointMake(0, 0) animated:YES];
-                         }
-                         completion:nil];
-    } else {
-        self.frame = newContainerFrame;
-        self.sendButton.frame = newSendButtonFrame;
-        self.messageTextView.frame = newTextViewFrame;
-        [self.messageTextView setContentOffset:CGPointMake(0, 0) animated:YES];
-    }
-    
-    if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
-        [self.delegate messageComposerFrameDidChange:newContainerFrame withAnimationDuration:_keyboardAnimationDuration];
-    }
-}
-
-- (void)scrollTextViewToBottom {
-    [self.messageTextView scrollRangeToVisible:NSMakeRange([self.messageTextView.text length], 0)];
-}
-
 
 #pragma mark - IBAction
 - (IBAction)sendClicked:(id)sender {
@@ -284,6 +247,10 @@
 
 
 #pragma mark - Utils
+- (void)scrollTextViewToBottom {
+    [self.messageTextView scrollRangeToVisible:NSMakeRange([self.messageTextView.text length], 0)];
+}
+
 - (UIInterfaceOrientation)currentInterfaceOrientation {
     // Returns the orientation of the Interface NOT the Device. The two do not happen in exact unison so
     // this point is important.
