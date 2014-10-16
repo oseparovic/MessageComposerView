@@ -36,7 +36,7 @@
 @end
 
 @interface MessageComposerView : UIView<UITextViewDelegate>
-@property(nonatomic, strong) id<MessageComposerViewDelegate> delegate;
+@property(nonatomic, weak) id<MessageComposerViewDelegate> delegate;
 // alternative initializer that allows the setting of the offset that the MessageComposerView will have
 // fromt the keyboard and the bottom of the screen.
 - (id)initWithFrame:(CGRect)frame andKeyboardOffset:(NSInteger)offset;
