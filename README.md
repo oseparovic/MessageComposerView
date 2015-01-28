@@ -30,6 +30,7 @@ In your class file, instantiate and add `MessageComposerView` to the bottom of y
     float defaultHeight = 54;
     CGRect subviewFrame = CGRectMake(0, self.view.frame.size.height-defaultHeight, defaultWidth, defaultHeight);
     self.messageComposerView = [[MessageComposerView alloc] initWithFrame:subviewFrame];
+    self.messageComposerView.delegate = self;
     [self.view addSubview:self.messageComposerView];
 
 If you need to offset the MessageComposerView from the keyboard by a certain fixed amount you can use `initWithFrame:andKeyboardOffset:` instead. This can be useful when using a `UITabBarController` or when adding your own custom elements below the MessageComposerView.
@@ -49,7 +50,7 @@ The `MessageComposerViewDelegate` has several delegate methods:
 **Required** - Triggered whenever the user presses the send button. `message` is the text within the `UITextView` at the time the button was pressed.
 
 2. `- (void)messageComposerFrameDidChange:(CGRect)frame withAnimationDuration:(float)duration;`  
-**Optional** - Triggered whenever the UITextView frame is reconfigured. `frame` is the CGRect that was applied to the MessageComposerView container.
+**Optional** - Triggered whenever the UITextView frame is reconfigured. `frame` is the CGRect that was applied to the MessageComposerView container. You can use this frame - namely the y pos - to determine the offset of your own views when the keyboard changes position. The duration will allow you to match the animation precisely.
 
 3. `- (void)messageComposerUserTyping;`  
 **Optional** - Triggered whenever the UITextView text changes.
