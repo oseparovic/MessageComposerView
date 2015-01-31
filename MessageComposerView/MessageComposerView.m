@@ -35,6 +35,12 @@
 
 @implementation MessageComposerView
 
+const NSInteger defaultHeight = 54;
+
+- (id)init {
+    return [self initWithFrame:CGRectMake(0, [self currentScreenSize].height-defaultHeight,[self currentScreenSize].width,defaultHeight)];
+}
+
 - (id)initWithFrame:(CGRect)frame {
     return [self initWithFrame:frame andKeyboardOffset:0];
 }
@@ -72,7 +78,7 @@
 }
 
 - (void)dealloc {
-    [self removeNotifications];
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (void)setup {
@@ -110,7 +116,9 @@
     self.messageTextView.delegate = self;
     self.messageTextView.contentMode = UIViewContentModeTop;
     
-    [self addNotifications];
+    NSNotificationCenter* defaultCenter = [NSNotificationCenter defaultCenter];
+    [defaultCenter addObserver:self selector:@selector(keyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
+    [defaultCenter addObserver:self selector:@selector(keyboardWillChangeFrame:) name:UIKeyboardWillChangeFrameNotification object:nil];
 }
 
 - (void)layoutSubviews {
@@ -126,7 +134,7 @@
         self.frame = frame;
         
         // Even though the height didn't change the origin did so notify delegates
-        if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
+        if ([self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
             [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:0];
         }
     } else {
@@ -153,34 +161,18 @@
         self.messageTextView.frame = newTextViewFrame;
         [self scrollTextViewToBottom];
         
-        if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
+        if ([self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
             [self.delegate messageComposerFrameDidChange:newContainerFrame withAnimationDuration:0];
         }
     }
 }
 
 
-#pragma mark - NSNotification
-- (void)addNotifications {
-    NSNotificationCenter* defaultCenter = [NSNotificationCenter defaultCenter];
-    [defaultCenter addObserver:self selector:@selector(textViewTextDidChange:) name:UITextViewTextDidChangeNotification object:self.messageTextView];
-    [defaultCenter addObserver:self selector:@selector(keyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
-    [defaultCenter addObserver:self selector:@selector(keyboardWillChangeFrame:) name:UIKeyboardWillChangeFrameNotification object:nil];
-}
-
-- (void)removeNotifications {
-    NSNotificationCenter* defaultCenter = [NSNotificationCenter defaultCenter];
-    [defaultCenter removeObserver:self name:UITextViewTextDidChangeNotification object:self.messageTextView];
-    [defaultCenter removeObserver:self name:UIKeyboardWillShowNotification object:nil];
-    [defaultCenter removeObserver:self name:UIKeyboardWillChangeFrameNotification object:nil];
-}
-
-
 #pragma mark - UITextViewDelegate
-- (void)textViewTextDidChange:(NSNotification*)notification {
+- (void)textViewDidChange:(UITextView *)textView {
     [self setNeedsLayout];
     
-    if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerUserTyping)])
+    if ([self.delegate respondsToSelector:@selector(messageComposerUserTyping)])
         [self.delegate messageComposerUserTyping];
 }
 
@@ -194,7 +186,7 @@
                      animations:^{self.frame = frame;}
                      completion:nil];
     
-    if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
+    if ([self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
         [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:_keyboardAnimationDuration];
     }
 }
@@ -209,7 +201,7 @@
                      animations:^{self.frame = frame;}
                      completion:nil];
     
-    if (self.delegate && [self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
+    if ([self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
         [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:_keyboardAnimationDuration];
     }
 }
@@ -235,14 +227,14 @@
 
 #pragma mark - IBAction
 - (IBAction)sendClicked:(id)sender {
-    if(self.delegate) {
+    if ([self.delegate respondsToSelector:@selector(messageComposerSendMessageClickedWithMessage:)]) {
         [self.delegate messageComposerSendMessageClickedWithMessage:self.messageTextView.text];
     }
     
     [self.messageTextView setText:@""];
     // Manually trigger the textViewDidChange method as setting the text when the messageTextView is not first responder the
     // UITextViewTextDidChangeNotification notification does not get fired.
-    [self textViewTextDidChange:nil];
+    [self textViewDidChange:self.messageTextView];
 }
 
 
@@ -251,40 +243,12 @@
     [self.messageTextView scrollRangeToVisible:NSMakeRange([self.messageTextView.text length], 0)];
 }
 
-- (UIInterfaceOrientation)currentInterfaceOrientation {
-    // Returns the orientation of the Interface NOT the Device. The two do not happen in exact unison so
-    // this point is important.
-    return [UIApplication sharedApplication].statusBarOrientation;
-}
-
 - (float)currentKeyboardHeight {
     if ([self.messageTextView isFirstResponder]) {
         return self.keyboardHeight;
     } else {
         return 0;
     }
-}
-
-- (CGSize)currentScreenSize {
-    // return the screen size with respect to the orientation
-    return [self currentScreenSizeInInterfaceOrientation:[self currentInterfaceOrientation]];
-}
-
-- (CGSize)currentScreenSizeInInterfaceOrientation:(UIInterfaceOrientation)orientation {
-    // http://stackoverflow.com/a/7905540/740474
-    CGSize size = [UIScreen mainScreen].bounds.size;
-    UIApplication *application = [UIApplication sharedApplication];
-    if (UIInterfaceOrientationIsLandscape(orientation)) {
-        size = CGSizeMake(size.height, size.width);
-    }
-    if (application.statusBarHidden == NO && !([[[UIDevice currentDevice] systemVersion] floatValue] >= 7.0)) {
-        // if the status bar is not hidden subtract its height from the screensize.
-        // NOTE: as of iOS 7 the status bar overlaps the application rather than sits on top of it, so hidden or not
-        // its height is irrelevant in our position calculations.
-        // see http://blog.jaredsinclair.com/post/61507315630/wrestling-with-status-bars-and-navigation-bars-on-ios-7
-        size.height -= MIN(application.statusBarFrame.size.width, application.statusBarFrame.size.height);
-    }
-    return size;
 }
 
 - (CGFloat)sizeWithText:(NSString*)text {
@@ -299,6 +263,46 @@
 
 - (void)finishEditing {
     [self.messageTextView resignFirstResponder];
+}
+
+#pragma mark - Screen Size Computation
+- (CGSize)currentScreenSize {
+    // return the screen size with respect to the orientation
+    return [self currentScreenSizeInInterfaceOrientation:[self currentInterfaceOrientation]];
+}
+
+- (CGSize)currentScreenSizeInInterfaceOrientation:(UIInterfaceOrientation)orientation {
+    // http://stackoverflow.com/a/7905540/740474
+    CGSize size = [UIScreen mainScreen].bounds.size;
+    UIApplication *application = [UIApplication sharedApplication];
+    // if the orientation at this point is landscape but it hasn't fully rotated yet use landscape size instead
+    if (UIInterfaceOrientationIsLandscape(orientation)) {
+        size = CGSizeMake(size.height, size.width);
+    }
+    // subtract the status bar height if visible
+    if (application.statusBarHidden == NO && !([[[UIDevice currentDevice] systemVersion] floatValue] >= 7.0)) {
+        // if the status bar is not hidden subtract its height from the screensize.
+        // NOTE: as of iOS 7 the status bar overlaps the application rather than sits on top of it, so hidden or not
+        // its height is irrelevant in our position calculations.
+        // see http://blog.jaredsinclair.com/post/61507315630/wrestling-with-status-bars-and-navigation-bars-on-ios-7
+        size.height -= MIN(application.statusBarFrame.size.width, application.statusBarFrame.size.height);
+    }
+    // subtract the navigation bar height if visible
+    id nav = application.keyWindow.rootViewController;
+    if ([nav isKindOfClass:[UINavigationController class]]) {
+        UINavigationController *navc = (UINavigationController *) nav;
+        if (!navc.navigationBarHidden) {
+            size.height -= navc.navigationBar.frame.size.height;
+        }
+    }
+    
+    return size;
+}
+
+- (UIInterfaceOrientation)currentInterfaceOrientation {
+    // Returns the orientation of the Interface NOT the Device. The two do not happen in exact unison so
+    // this point is important.
+    return [UIApplication sharedApplication].statusBarOrientation;
 }
 
 @end
