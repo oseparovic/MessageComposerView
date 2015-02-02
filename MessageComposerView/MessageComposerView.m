@@ -1,6 +1,6 @@
 // MessageComposerView.m
 //
-// Copyright (c) 2014 oseparovic. ( http://thegameengine.org )
+// Copyright (c) 2015 oseparovic. ( http://thegameengine.org )
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,7 @@
 #import "MessageComposerView.h"
 
 @interface MessageComposerView()
+- (IBAction)sendClicked:(id)sender;
 @property(nonatomic, strong) UITextView *messageTextView;
 @property(nonatomic, strong) UIButton *sendButton;
 @property(nonatomic) CGFloat keyboardHeight;
@@ -38,7 +39,11 @@
 const NSInteger defaultHeight = 54;
 
 - (id)init {
-    return [self initWithFrame:CGRectMake(0, [self currentScreenSize].height-defaultHeight,[self currentScreenSize].width,defaultHeight)];
+    return [self initWithKeyboardOffset:0 andMaxHeight:CGFLOAT_MAX];
+}
+
+- (id)initWithKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight {
+    return [self initWithFrame:CGRectMake(0, [self currentScreenSize].height-defaultHeight,[self currentScreenSize].width,defaultHeight) andKeyboardOffset:offset andMaxHeight:maxTVHeight];
 }
 
 - (id)initWithFrame:(CGRect)frame {
@@ -275,10 +280,15 @@ const NSInteger defaultHeight = 54;
     // http://stackoverflow.com/a/7905540/740474
     CGSize size = [UIScreen mainScreen].bounds.size;
     UIApplication *application = [UIApplication sharedApplication];
-    // if the orientation at this point is landscape but it hasn't fully rotated yet use landscape size instead
-    if (UIInterfaceOrientationIsLandscape(orientation)) {
+    
+    // if the orientation at this point is landscape but it hasn't fully rotated yet use landscape size instead.
+    // handling differs between iOS 7 && 8 so need to check if size is properly configured or not. On
+    // iOS 7 height will still be greater than width in landscape without this call but on iOS 8
+    // it won't
+    if (UIInterfaceOrientationIsLandscape(orientation) && size.height > size.width) {
         size = CGSizeMake(size.height, size.width);
     }
+    
     // subtract the status bar height if visible
     if (application.statusBarHidden == NO && !([[[UIDevice currentDevice] systemVersion] floatValue] >= 7.0)) {
         // if the status bar is not hidden subtract its height from the screensize.
@@ -286,14 +296,6 @@ const NSInteger defaultHeight = 54;
         // its height is irrelevant in our position calculations.
         // see http://blog.jaredsinclair.com/post/61507315630/wrestling-with-status-bars-and-navigation-bars-on-ios-7
         size.height -= MIN(application.statusBarFrame.size.width, application.statusBarFrame.size.height);
-    }
-    // subtract the navigation bar height if visible
-    id nav = application.keyWindow.rootViewController;
-    if ([nav isKindOfClass:[UINavigationController class]]) {
-        UINavigationController *navc = (UINavigationController *) nav;
-        if (!navc.navigationBarHidden) {
-            size.height -= navc.navigationBar.frame.size.height;
-        }
     }
     
     return size;

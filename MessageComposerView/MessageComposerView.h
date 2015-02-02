@@ -1,6 +1,6 @@
 // MessageComposerView.h
 //
-// Copyright (c) 2014 oseparovic. ( http://thegameengine.org )
+// Copyright (c) 2015 oseparovic. ( http://thegameengine.org )
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -37,11 +37,14 @@
 
 @interface MessageComposerView : UIView<UITextViewDelegate>
 @property(nonatomic, weak) id<MessageComposerViewDelegate> delegate;
-// alternative initializer that allows the setting of the offset that the MessageComposerView will have
-// fromt the keyboard and the bottom of the screen.
+
+// init with screen width and default height. Offset provided is space between composer and keyboard/bottom of screen
+- (id)initWithKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight;
+// init with provided frame and offset between composer and keyboard/bottom of screen
 - (id)initWithFrame:(CGRect)frame andKeyboardOffset:(NSInteger)offset;
+// init with provided frame and offset between composer and keyboard/bottom of screen. Also set a max height on composer.
 - (id)initWithFrame:(CGRect)frame andKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight;
-- (IBAction)sendClicked:(id)sender;
+// provide a function to scroll the textview to bottom manually in fringe cases like loading message drafts etc.
 - (void)scrollTextViewToBottom;
 
 // To avoid exposing the UITextView and attempt to prevent bad practice, startEditing and finishEditing
