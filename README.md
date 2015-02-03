@@ -54,22 +54,17 @@ The `MessageComposerViewDelegate` has several delegate methods:
 If you're using (or want to use) the CocoaPods you can get the latest stable release by doing the following:
 
 1. Install cocoapods and set it up (if you haven't already)  
-```
-sudo gem install cocoapods
-pod setup
-```
+`sudo gem install cocoapods`  
+`pod setup`
+
 2. Create a textfile in your project's root directory called `Podfile` (if you haven't already) and add the following line:  
-```
-pod 'MessageComposerView', :git => 'https://github.com/oseparovic/MessageComposerView.git'
-```
+`pod 'MessageComposerView', :git => 'https://github.com/oseparovic/MessageComposerView.git'`
 
 3. Run `pod install`. You should see something like the following:  
-```
-Downloading dependencies
-Installing MessageComposerView (1.3.0)
-Generating Pods project
-Integrating client project
-```
+`Downloading dependencies`  
+`Installing MessageComposerView (1.3.0)`  
+`Generating Pods project`  
+`Integrating client project`  
 
 4. Start your project via the newly created `.xcworkspace` file. Cocoapods creates a seperate xcode project file that has the included pods set up for you. It should be in your project's root directory right alongside your `.xcodeproj` file if everything went smoothly!
 
