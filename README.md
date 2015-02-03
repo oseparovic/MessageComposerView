@@ -17,27 +17,26 @@ In your header file:
 3. Optionally create a `MessageComposerView` property for your message composer view.
 
 Example:
-
-    #import "MessageComposerView.h"
-    @interface ViewController : UIViewController<MessageComposerViewDelegate>
-    @property (nonatomic, strong) MessageComposerView *messageComposerView;
-    @end
-
+```
+#import "MessageComposerView.h"
+@interface ViewController : UIViewController<MessageComposerViewDelegate>
+@property (nonatomic, strong) MessageComposerView *messageComposerView;
+@end
+```
 In your class file, instantiate and add `MessageComposerView` to the bottom of your view controller. You can do this simply via `init` (the default height is 54)
-
-    self.messageComposerView = [[MessageComposerView alloc] init];
-    self.messageComposerView.delegate = self;
-    [self.view addSubview:self.messageComposerView];
-
+```
+self.messageComposerView = [[MessageComposerView alloc] init];
+self.messageComposerView.delegate = self;
+[self.view addSubview:self.messageComposerView];
+```
 There are several custom initializers that are also supported:
 
-    // init with screen width and default height. Offset provided is space between composer and keyboard/bottom of screen
-    - (id)initWithKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight;
-    // init with provided frame and offset between composer and keyboard/bottom of screen
-    - (id)initWithFrame:(CGRect)frame andKeyboardOffset:(NSInteger)offset;
-    // init with provided frame and offset between composer and keyboard/bottom of screen. Also set a max height on composer.
-    - (id)initWithFrame:(CGRect)frame andKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight;
-    // provide a function to scroll the textview to bottom manually in fringe cases like loading message drafts etc.
+* `- (id)initWithKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight;`  
+init with screen width and default height. Offset provided is space between composer and keyboard/bottom of screen
+* `- (id)initWithFrame:(CGRect)frame andKeyboardOffset:(NSInteger)offset;`
+init with provided frame and offset between composer and keyboard/bottom of screen
+* `- (id)initWithFrame:(CGRect)frame andKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight;`
+init with provided frame and offset between composer and keyboard/bottom of screen. Also set a max height on composer.
 
 ####Delegation
 The `MessageComposerViewDelegate` has several delegate methods:
@@ -50,6 +49,29 @@ The `MessageComposerViewDelegate` has several delegate methods:
 
 3. `- (void)messageComposerUserTyping;`  
 **Optional** - Triggered whenever the UITextView text changes.
+
+####CocoaPods
+If you're using (or want to use) the CocoaPods you can get the latest stable release by doing the following:
+
+1. Install cocoapods and set it up (if you haven't already)  
+```
+sudo gem install cocoapods
+pod setup
+```
+2. Create a textfile in your project's root directory called `Podfile` (if you haven't already) and add the following line:  
+```
+pod 'MessageComposerView', :git => 'https://github.com/oseparovic/MessageComposerView.git'
+```
+
+3. Run `pod install`. You should see something like the following:  
+```
+Downloading dependencies
+Installing MessageComposerView (1.3.0)
+Generating Pods project
+Integrating client project
+```
+
+4. Start your project via the newly created `.xcworkspace` file. Cocoapods creates a seperate xcode project file that has the included pods set up for you. It should be in your project's root directory right alongside your `.xcodeproj` file if everything went smoothly!
 
 How it works
 ------------
