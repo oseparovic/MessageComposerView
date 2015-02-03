@@ -2,7 +2,7 @@ Pod::Spec.new do |s|
   name               = "MessageComposerView"
   url                = "https://github.com/oseparovic/#{name}"
   git_url            = "#{url}.git"
-  version            = "1.2.0"
+  version            = "1.3.0"
 
   s.name             = name
   s.version          = version
@@ -16,5 +16,5 @@ Pod::Spec.new do |s|
   s.requires_arc     = true
   s.source_files     = "#{name}/*.{h,m}"
   s.resources        = "#{name}/*.{xib}"
-  s.platform         = :ios, '6.0'
+  s.platform         = :ios, '7.0'
 end
