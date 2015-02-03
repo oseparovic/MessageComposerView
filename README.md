@@ -31,13 +31,13 @@ In your class file, instantiate and add `MessageComposerView` to the bottom of y
 
 There are several custom initializers that are also supported:
 
-// init with screen width and default height. Offset provided is space between composer and keyboard/bottom of screen
-- (id)initWithKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight;
-// init with provided frame and offset between composer and keyboard/bottom of screen
-- (id)initWithFrame:(CGRect)frame andKeyboardOffset:(NSInteger)offset;
-// init with provided frame and offset between composer and keyboard/bottom of screen. Also set a max height on composer.
-- (id)initWithFrame:(CGRect)frame andKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight;
-// provide a function to scroll the textview to bottom manually in fringe cases like loading message drafts etc.
+    // init with screen width and default height. Offset provided is space between composer and keyboard/bottom of screen
+    - (id)initWithKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight;
+    // init with provided frame and offset between composer and keyboard/bottom of screen
+    - (id)initWithFrame:(CGRect)frame andKeyboardOffset:(NSInteger)offset;
+    // init with provided frame and offset between composer and keyboard/bottom of screen. Also set a max height on composer.
+    - (id)initWithFrame:(CGRect)frame andKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight;
+    // provide a function to scroll the textview to bottom manually in fringe cases like loading message drafts etc.
 
 ####Delegation
 The `MessageComposerViewDelegate` has several delegate methods:
