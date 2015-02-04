@@ -82,4 +82,4 @@ The actual resizing of the views is handled via `layoutSubviews` and through the
 Contact
 -------
 
-If you need to contact me you can do so via my twitter [@alexgophermix](https://twitter.com/alexgophermix) or through my website [thegameengine.org](http://www.thegameengine.org/)
+If you need to contact me you can do so via my twitter [@alexgophermix](https://twitter.com/alexgophermix) or through my website [thegameengine.org](http://www.thegameengine.org/contact/)
