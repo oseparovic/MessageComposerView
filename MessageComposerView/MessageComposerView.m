@@ -70,7 +70,22 @@ const NSInteger defaultHeight = 54;
         // alloc necessary elements
         self.sendButton = [[UIButton alloc] initWithFrame:CGRectZero];
         [self.sendButton addTarget:self action:@selector(sendClicked:) forControlEvents:UIControlEventTouchUpInside];
-        self.messageTextView = [[UITextView alloc] initWithFrame:CGRectZero];
+        
+        // fix ridiculous jumpy scrolling bug inherant in native UITextView since 7.0
+        // http://stackoverflow.com/a/19339716/740474
+        NSString *reqSysVer = @"7.0";
+        NSString *currSysVer = [[UIDevice currentDevice] systemVersion];
+        BOOL osVersionSupported = ([currSysVer compare:reqSysVer  options:NSNumericSearch] != NSOrderedAscending);
+        if (osVersionSupported)  {
+            NSTextStorage* textStorage = [[NSTextStorage alloc] init];
+            NSLayoutManager* layoutManager = [NSLayoutManager new];
+            [textStorage addLayoutManager:layoutManager];
+            NSTextContainer *textContainer = [[NSTextContainer alloc] initWithSize:self.bounds.size];
+            [layoutManager addTextContainer:textContainer];
+            self.messageTextView = [[UITextView alloc] initWithFrame:CGRectZero textContainer:textContainer];
+        } else {
+            self.messageTextView = [[UITextView alloc] initWithFrame:CGRectZero];
+        }
         
         // configure elements
         [self setup];
@@ -95,31 +110,30 @@ const NSInteger defaultHeight = 54;
     
     CGRect sendButtonFrame = self.bounds;
     sendButtonFrame.size.width = 50;
-    sendButtonFrame.size.height = 34;
+    sendButtonFrame.size.height = defaultHeight - _composerBackgroundInsets.top - _composerBackgroundInsets.bottom;
     sendButtonFrame.origin.x = self.frame.size.width - _composerBackgroundInsets.right - sendButtonFrame.size.width;
-    sendButtonFrame.origin.y = self.bounds.size.height - (_composerBackgroundInsets.bottom + sendButtonFrame.size.height);
-    self.sendButton.frame = sendButtonFrame;
-    self.sendButton.autoresizingMask = UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleLeftMargin;
-    self.sendButton.layer.cornerRadius = 5;
+    sendButtonFrame.origin.y = self.bounds.size.height - _composerBackgroundInsets.bottom - sendButtonFrame.size.height;
+    [self.sendButton setFrame:sendButtonFrame];
+    [self.sendButton setAutoresizingMask:(UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleLeftMargin)];
+    [self.sendButton.layer setCornerRadius:5];
     [self.sendButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
     [self.sendButton setTitleColor:[UIColor colorWithRed:210/255.0 green:210/255.0 blue:210/255.0 alpha:1.0] forState:UIControlStateHighlighted];
     [self.sendButton setTitleColor:[UIColor grayColor] forState:UIControlStateSelected];
     [self.sendButton setBackgroundColor:[UIColor orangeColor]];
     [self.sendButton setTitle:@"Send" forState:UIControlStateNormal];
-    self.sendButton.titleLabel.font = [UIFont boldSystemFontOfSize:14];
+    [self.sendButton.titleLabel setFont:[UIFont boldSystemFontOfSize:14]];
     
     CGRect messageTextViewFrame = self.bounds;
     messageTextViewFrame.origin.x = _composerBackgroundInsets.left;
     messageTextViewFrame.origin.y = _composerBackgroundInsets.top;
     messageTextViewFrame.size.width = self.frame.size.width - _composerBackgroundInsets.left - 10 - sendButtonFrame.size.width - _composerBackgroundInsets.right;
-    messageTextViewFrame.size.height = 34;
-    self.messageTextView.frame = messageTextViewFrame;
-    self.messageTextView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin;
-    self.messageTextView.showsHorizontalScrollIndicator = NO;
-    self.messageTextView.layer.cornerRadius = 5;
-    self.messageTextView.font = [UIFont systemFontOfSize:14];
-    self.messageTextView.delegate = self;
-    self.messageTextView.contentMode = UIViewContentModeTop;
+    messageTextViewFrame.size.height = defaultHeight - _composerBackgroundInsets.top - _composerBackgroundInsets.bottom;
+    [self.messageTextView setFrame:messageTextViewFrame];
+    [self.messageTextView setAutoresizingMask:(UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin)];
+    [self.messageTextView setShowsHorizontalScrollIndicator:NO];
+    [self.messageTextView.layer setCornerRadius:5];
+    [self.messageTextView setFont:[UIFont systemFontOfSize:14]];
+    [self.messageTextView setDelegate:self];
     
     NSNotificationCenter* defaultCenter = [NSNotificationCenter defaultCenter];
     [defaultCenter addObserver:self selector:@selector(keyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
@@ -132,6 +146,9 @@ const NSInteger defaultHeight = 54;
     CGFloat oldHeight = self.messageTextView.frame.size.height;
     CGFloat newHeight = [self sizeWithText:self.messageTextView.text];
     
+    if (newHeight >= _composerTVMaxHeight) {
+        [self scrollTextViewToBottom];
+    }
     if (oldHeight == newHeight) {
         // In cases where the height remains the same after the text change/rotation only change the y origin
         CGRect frame = self.frame;
@@ -245,7 +262,9 @@ const NSInteger defaultHeight = 54;
 
 #pragma mark - Utils
 - (void)scrollTextViewToBottom {
-    [self.messageTextView scrollRangeToVisible:NSMakeRange([self.messageTextView.text length], 0)];
+    // scrollRangeToVisible:NSMakeRange is a pretty buggy function. Manually setting the content offset seems to work better
+    CGPoint offset = CGPointMake(0, self.messageTextView.contentSize.height - self.messageTextView.frame.size.height);
+    [self.messageTextView setContentOffset:offset animated:NO];
 }
 
 - (float)currentKeyboardHeight {
@@ -269,6 +288,7 @@ const NSInteger defaultHeight = 54;
 - (void)finishEditing {
     [self.messageTextView resignFirstResponder];
 }
+
 
 #pragma mark - Screen Size Computation
 - (CGSize)currentScreenSize {
