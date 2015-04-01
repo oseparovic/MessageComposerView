@@ -24,7 +24,6 @@
 
 @interface MessageComposerView()
 - (IBAction)sendClicked:(id)sender;
-@property(nonatomic, strong) UITextView *messageTextView;
 @property(nonatomic, strong) UIButton *sendButton;
 @property(nonatomic) CGFloat keyboardHeight;
 @property(nonatomic) CGFloat keyboardAnimationDuration;
@@ -309,13 +308,15 @@ const NSInteger defaultHeight = 54;
         size = CGSizeMake(size.height, size.width);
     }
     
-    // subtract the status bar height if visible
-    if (application.statusBarHidden == NO && !([[[UIDevice currentDevice] systemVersion] floatValue] >= 7.0)) {
-        // if the status bar is not hidden subtract its height from the screensize.
-        // NOTE: as of iOS 7 the status bar overlaps the application rather than sits on top of it, so hidden or not
-        // its height is irrelevant in our position calculations.
-        // see http://blog.jaredsinclair.com/post/61507315630/wrestling-with-status-bars-and-navigation-bars-on-ios-7
-        size.height -= MIN(application.statusBarFrame.size.width, application.statusBarFrame.size.height);
+    id nav = [UIApplication sharedApplication].keyWindow.rootViewController;
+    if ([nav isKindOfClass:[UINavigationController class]]) {
+        UINavigationController *navc = (UINavigationController *) nav;
+        if (!navc.navigationBarHidden) {
+            size.height -= navc.navigationBar.frame.size.height;
+        }
+        if (navc.navigationBar.barPosition == UIBarPositionTopAttached) {
+            size.height -= application.statusBarFrame.size.height;
+        }
     }
     
     return size;

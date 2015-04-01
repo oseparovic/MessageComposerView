@@ -37,6 +37,8 @@
 
 @interface MessageComposerView : UIView<UITextViewDelegate>
 @property(nonatomic, weak) id<MessageComposerViewDelegate> delegate;
+@property(nonatomic, strong) UITextView *messageTextView;
+@property(nonatomic, strong) NSString *messagePlaceholder;
 
 // init with screen width and default height. Offset provided is space between composer and keyboard/bottom of screen
 - (id)initWithKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight;
