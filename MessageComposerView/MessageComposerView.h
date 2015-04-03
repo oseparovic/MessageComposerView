@@ -30,7 +30,9 @@
 - (void)messageComposerSendMessageClickedWithMessage:(NSString*)message;
 @optional
 // executed whenever the MessageComposerView's frame changes. Provides the frame it is changing to and the animation duration
-- (void)messageComposerFrameDidChange:(CGRect)frame withAnimationDuration:(CGFloat)duration;
+- (void)messageComposerFrameDidChange:(CGRect)frame withAnimationDuration:(CGFloat)duration __attribute__((deprecated));
+// executed whenever the MessageComposerView's frame changes. Provides the frame it is changing to and the animation duration
+- (void)messageComposerFrameDidChange:(CGRect)frame withAnimationDuration:(CGFloat)duration andCurve:(NSInteger)curve;
 // executed whenever the user is typing in the text view
 - (void)messageComposerUserTyping;
 @end
@@ -39,6 +41,16 @@
 @property(nonatomic, weak) id<MessageComposerViewDelegate> delegate;
 @property(nonatomic, strong) UITextView *messageTextView;
 @property(nonatomic, strong) NSString *messagePlaceholder;
+@property(nonatomic, strong) UIButton *sendButton;
+@property(nonatomic) NSInteger keyboardHeight;
+@property(nonatomic) NSInteger keyboardAnimationCurve;
+@property(nonatomic) CGFloat keyboardAnimationDuration;
+@property(nonatomic) NSInteger keyboardOffset;
+
+// configuration method.
+- (void)setup;
+// layout method
+- (void)setupFrames;
 
 // init with screen width and default height. Offset provided is space between composer and keyboard/bottom of screen
 - (id)initWithKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight;
@@ -48,6 +60,13 @@
 - (id)initWithFrame:(CGRect)frame andKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight;
 // provide a function to scroll the textview to bottom manually in fringe cases like loading message drafts etc.
 - (void)scrollTextViewToBottom;
+// for adding accessory views to the left of the messageTextView
+- (void)configureWithAccessory:(UIView *)accessoryView;
+// keyboarding resizing function in case you want to overwrite it
+- (void)keyboardWillChangeFrame:(NSNotification *)notification;
+
+// returns the current keyboard height. 0 if keyboard dismissed.
+- (CGFloat)currentKeyboardHeight;
 
 // To avoid exposing the UITextView and attempt to prevent bad practice, startEditing and finishEditing
 // are available to become and resign first responder. This means you shouldn't have an excuse to

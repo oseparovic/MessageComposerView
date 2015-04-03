@@ -24,11 +24,8 @@
 
 @interface MessageComposerView()
 - (IBAction)sendClicked:(id)sender;
-@property(nonatomic, strong) UIButton *sendButton;
-@property(nonatomic) CGFloat keyboardHeight;
-@property(nonatomic) CGFloat keyboardAnimationDuration;
-@property(nonatomic) NSInteger keyboardAnimationCurve;
-@property(nonatomic) NSInteger keyboardOffset;
+@property(nonatomic, strong) UIView *accessoryView;
+@property(nonatomic, strong) UIView *accessoryViewSubView;
 @property(nonatomic) UIEdgeInsets composerBackgroundInsets;
 @property(nonatomic) CGFloat composerTVMaxHeight;
 @end
@@ -36,9 +33,10 @@
 @implementation MessageComposerView
 
 const NSInteger defaultHeight = 54;
+const NSInteger defaultMaxHeight = 100;
 
 - (id)init {
-    return [self initWithKeyboardOffset:0 andMaxHeight:CGFLOAT_MAX];
+    return [self initWithKeyboardOffset:0 andMaxHeight:defaultMaxHeight];
 }
 
 - (id)initWithKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight {
@@ -50,7 +48,7 @@ const NSInteger defaultHeight = 54;
 }
 
 - (id)initWithFrame:(CGRect)frame andKeyboardOffset:(NSInteger)offset {
-    return [self initWithFrame:frame andKeyboardOffset:offset andMaxHeight:CGFLOAT_MAX];
+    return [self initWithFrame:frame andKeyboardOffset:offset andMaxHeight:defaultMaxHeight];
 }
 
 - (id)initWithFrame:(CGRect)frame andKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight {
@@ -69,6 +67,7 @@ const NSInteger defaultHeight = 54;
         // alloc necessary elements
         self.sendButton = [[UIButton alloc] initWithFrame:CGRectZero];
         [self.sendButton addTarget:self action:@selector(sendClicked:) forControlEvents:UIControlEventTouchUpInside];
+        self.accessoryView = [[UIView alloc] init];
         
         // fix ridiculous jumpy scrolling bug inherant in native UITextView since 7.0
         // http://stackoverflow.com/a/19339716/740474
@@ -87,11 +86,13 @@ const NSInteger defaultHeight = 54;
         }
         
         // configure elements
+        self.messagePlaceholder = @"Write a message";
         [self setup];
         
         // insert elements above MessageComposerView
-        [self insertSubview:self.sendButton aboveSubview:self];
-        [self insertSubview:self.messageTextView aboveSubview:self];
+        [self addSubview:self.sendButton];
+        [self addSubview:self.accessoryView];
+        [self addSubview:self.messageTextView];
     }
     return self;
 }
@@ -106,37 +107,61 @@ const NSInteger defaultHeight = 54;
     self.autoresizingMask = UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleWidth;
     self.userInteractionEnabled = YES;
     self.multipleTouchEnabled = NO;
-    
-    CGRect sendButtonFrame = self.bounds;
-    sendButtonFrame.size.width = 50;
-    sendButtonFrame.size.height = defaultHeight - _composerBackgroundInsets.top - _composerBackgroundInsets.bottom;
-    sendButtonFrame.origin.x = self.frame.size.width - _composerBackgroundInsets.right - sendButtonFrame.size.width;
-    sendButtonFrame.origin.y = self.bounds.size.height - _composerBackgroundInsets.bottom - sendButtonFrame.size.height;
-    [self.sendButton setFrame:sendButtonFrame];
+
     [self.sendButton setAutoresizingMask:(UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleLeftMargin)];
     [self.sendButton.layer setCornerRadius:5];
     [self.sendButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    [self.sendButton setTitleColor:[UIColor colorWithRed:210/255.0 green:210/255.0 blue:210/255.0 alpha:1.0] forState:UIControlStateHighlighted];
+    [self.sendButton setTitleColor:[UIColor lightGrayColor] forState:UIControlStateHighlighted];
+    [self.sendButton setTitleColor:[UIColor lightGrayColor] forState:UIControlStateDisabled];
     [self.sendButton setTitleColor:[UIColor grayColor] forState:UIControlStateSelected];
     [self.sendButton setBackgroundColor:[UIColor orangeColor]];
     [self.sendButton setTitle:@"Send" forState:UIControlStateNormal];
     [self.sendButton.titleLabel setFont:[UIFont boldSystemFontOfSize:14]];
     
-    CGRect messageTextViewFrame = self.bounds;
-    messageTextViewFrame.origin.x = _composerBackgroundInsets.left;
-    messageTextViewFrame.origin.y = _composerBackgroundInsets.top;
-    messageTextViewFrame.size.width = self.frame.size.width - _composerBackgroundInsets.left - 10 - sendButtonFrame.size.width - _composerBackgroundInsets.right;
-    messageTextViewFrame.size.height = defaultHeight - _composerBackgroundInsets.top - _composerBackgroundInsets.bottom;
-    [self.messageTextView setFrame:messageTextViewFrame];
+    [self.accessoryView setAutoresizingMask:(UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleRightMargin)];
+
     [self.messageTextView setAutoresizingMask:(UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin)];
     [self.messageTextView setShowsHorizontalScrollIndicator:NO];
-    [self.messageTextView.layer setCornerRadius:5];
+    [self.messageTextView.layer setCornerRadius:2];
     [self.messageTextView setFont:[UIFont systemFontOfSize:14]];
+    [self.messageTextView setTextColor:[UIColor lightGrayColor]];
     [self.messageTextView setDelegate:self];
+    
+    [self setupFrames];
     
     NSNotificationCenter* defaultCenter = [NSNotificationCenter defaultCenter];
     [defaultCenter addObserver:self selector:@selector(keyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
     [defaultCenter addObserver:self selector:@selector(keyboardWillChangeFrame:) name:UIKeyboardWillChangeFrameNotification object:nil];
+}
+
+- (void)setupFrames {
+    CGRect sendButtonFrame = self.bounds;
+    sendButtonFrame.size.width = 50;
+    sendButtonFrame.size.height = sendButtonFrame.size.height - _composerBackgroundInsets.top - _composerBackgroundInsets.bottom;
+    sendButtonFrame.origin.x = self.frame.size.width - _composerBackgroundInsets.right - sendButtonFrame.size.width;
+    sendButtonFrame.origin.y = self.bounds.size.height - _composerBackgroundInsets.bottom - sendButtonFrame.size.height;
+    [self.sendButton setFrame:sendButtonFrame];
+    
+    CGRect accessoryFrame = self.bounds;
+    accessoryFrame.size.width = self.accessoryViewSubView.frame.size.width;
+    accessoryFrame.size.height = accessoryFrame.size.height - _composerBackgroundInsets.top - _composerBackgroundInsets.bottom;
+    accessoryFrame.origin.x = _composerBackgroundInsets.left;
+    accessoryFrame.origin.y = self.bounds.size.height - _composerBackgroundInsets.bottom - accessoryFrame.size.height;
+    [self.accessoryView setFrame:accessoryFrame];
+    [self.accessoryViewSubView setCenter:CGPointMake(self.accessoryView.frame.size.width/2, self.accessoryView.frame.size.height/2)];
+    
+    CGRect messageTextViewFrame = self.bounds;
+    messageTextViewFrame.origin.x = _composerBackgroundInsets.left;
+    if (accessoryFrame.size.width > 0) {
+        messageTextViewFrame.origin.x += accessoryFrame.size.width + _composerBackgroundInsets.left;
+    }
+    messageTextViewFrame.origin.y = _composerBackgroundInsets.top;
+    messageTextViewFrame.size.width = self.frame.size.width - _composerBackgroundInsets.left - _composerBackgroundInsets.left - sendButtonFrame.size.width - _composerBackgroundInsets.right;
+    if (accessoryFrame.size.width > 0) {
+        messageTextViewFrame.size.width -= accessoryFrame.size.width + _composerBackgroundInsets.left;
+    }
+    messageTextViewFrame.size.height = messageTextViewFrame.size.height - _composerBackgroundInsets.top; - _composerBackgroundInsets.bottom;
+    [self.messageTextView setFrame:messageTextViewFrame];
 }
 
 - (void)layoutSubviews {
@@ -155,8 +180,12 @@ const NSInteger defaultHeight = 54;
         self.frame = frame;
         
         // Even though the height didn't change the origin did so notify delegates
+        // TODO: remove deprecated method
         if ([self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
             [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:0];
+        }
+        if ([self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:andCurve:)]) {
+            [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:0 andCurve:0];
         }
     } else {
         // The view is already animating as part of the rotation so we just have to make sure it
@@ -166,11 +195,15 @@ const NSInteger defaultHeight = 54;
         // Recalculate MessageComposerView container frame
         CGRect newContainerFrame = self.frame;
         newContainerFrame.size.height = newHeight + _composerBackgroundInsets.top + _composerBackgroundInsets.bottom;
-        newContainerFrame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - newContainerFrame.size.height - _keyboardOffset;;
+        newContainerFrame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - newContainerFrame.size.height - _keyboardOffset;
         
         // Recalculate send button frame
         CGRect newSendButtonFrame = self.sendButton.frame;
         newSendButtonFrame.origin.y = newContainerFrame.size.height - (_composerBackgroundInsets.bottom + newSendButtonFrame.size.height);
+        
+        // Recalculate accessory frame
+        CGRect newAccessoryFrame = self.accessoryView.frame;
+        newAccessoryFrame.origin.y = newContainerFrame.size.height - (_composerBackgroundInsets.bottom + newAccessoryFrame.size.height);
         
         // Recalculate UITextView frame
         CGRect newTextViewFrame = self.messageTextView.frame;
@@ -179,11 +212,16 @@ const NSInteger defaultHeight = 54;
         
         self.frame = newContainerFrame;
         self.sendButton.frame = newSendButtonFrame;
+        self.accessoryView.frame = newAccessoryFrame;
         self.messageTextView.frame = newTextViewFrame;
         [self scrollTextViewToBottom];
         
+        // TODO: remove deprecated method
         if ([self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
             [self.delegate messageComposerFrameDidChange:newContainerFrame withAnimationDuration:0];
+        }
+        if ([self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:andCurve:)]) {
+            [self.delegate messageComposerFrameDidChange:newContainerFrame withAnimationDuration:0 andCurve:0];
         }
     }
 }
@@ -193,11 +231,23 @@ const NSInteger defaultHeight = 54;
 - (void)textViewDidChange:(UITextView *)textView {
     [self setNeedsLayout];
     
+    if ([textView.text isEqualToString:self.messagePlaceholder] || [NSString isEmpty:textView.text]) {
+        [self.sendButton setEnabled:NO];
+    } else {
+        [self.sendButton setEnabled:YES];
+    }
+    
     if ([self.delegate respondsToSelector:@selector(messageComposerUserTyping)])
         [self.delegate messageComposerUserTyping];
 }
 
 - (void)textViewDidBeginEditing:(UITextView*)textView {
+    if ([textView.text isEqualToString:self.messagePlaceholder]) {
+        textView.text = @"";
+        textView.textColor = [UIColor blackColor];
+        [self.sendButton setEnabled:NO];
+    }
+    
     CGRect frame = self.frame;
     frame.origin.y = ([self currentScreenSize].height - [self currentKeyboardHeight]) - frame.size.height - _keyboardOffset;
     
@@ -207,12 +257,22 @@ const NSInteger defaultHeight = 54;
                      animations:^{self.frame = frame;}
                      completion:nil];
     
+    // TODO: remove deprecated method
     if ([self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
-        [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:_keyboardAnimationDuration];
+        [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:0];
+    }
+    if ([self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:andCurve:)]) {
+        [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:_keyboardAnimationDuration andCurve:_keyboardAnimationCurve];
     }
 }
 
 - (void)textViewDidEndEditing:(UITextView*)textView {
+    if ([textView.text isEqualToString:@""] || [NSString isEmpty:textView.text]) {
+        textView.text = self.messagePlaceholder;
+        textView.textColor = [UIColor lightGrayColor];
+        [self.sendButton setEnabled:NO];
+    }
+    
     CGRect frame = self.frame;
     frame.origin.y = [self currentScreenSize].height - self.frame.size.height - _keyboardOffset;
     
@@ -222,8 +282,12 @@ const NSInteger defaultHeight = 54;
                      animations:^{self.frame = frame;}
                      completion:nil];
     
+    // TODO: remove deprecated method
     if ([self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
-        [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:_keyboardAnimationDuration];
+        [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:0];
+    }
+    if ([self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:andCurve:)]) {
+        [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:_keyboardAnimationDuration andCurve:_keyboardAnimationCurve];
     }
 }
 
@@ -260,13 +324,28 @@ const NSInteger defaultHeight = 54;
 
 
 #pragma mark - Utils
+- (void)setMessagePlaceholder:(NSString *)messagePlaceholder {
+    _messagePlaceholder = messagePlaceholder;
+    [self.messageTextView setText:_messagePlaceholder];
+    // Manually trigger the textViewDidChange method as setting the text when the messageTextView is not first responder the
+    // UITextViewTextDidChangeNotification notification does not get fired.
+    [self textViewDidChange:self.messageTextView];
+}
+- (void)configureWithAccessory:(UIView *)accessoryView {
+    // add the accessory view (camera icons etc) to the left of the message text view and rejig the frames to accomodate.
+    self.accessoryViewSubView = accessoryView;
+    [self.accessoryViewSubView removeFromSuperview];
+    [self.accessoryView addSubview:self.accessoryViewSubView];
+    [self setupFrames];
+}
+
 - (void)scrollTextViewToBottom {
     // scrollRangeToVisible:NSMakeRange is a pretty buggy function. Manually setting the content offset seems to work better
     CGPoint offset = CGPointMake(0, self.messageTextView.contentSize.height - self.messageTextView.frame.size.height);
     [self.messageTextView setContentOffset:offset animated:NO];
 }
 
-- (float)currentKeyboardHeight {
+- (CGFloat)currentKeyboardHeight {
     if ([self.messageTextView isFirstResponder]) {
         return self.keyboardHeight;
     } else {
