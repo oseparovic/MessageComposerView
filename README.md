@@ -38,13 +38,29 @@ init with provided frame and offset between composer and keyboard/bottom of scre
 * `- (id)initWithFrame:(CGRect)frame andKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight;`
 init with provided frame and offset between composer and keyboard/bottom of screen. Also set a max height on composer.
 
+Message composerview supports text placeholders. If you want to customize the placeholder text, simply edit the `messagePlaceholder` property like so:
+
+```
+self.messageComposerView.messagePlaceholder = @"Type a comment...";
+```
+
+If you want to add an accessory view (e.g. a camera button) you can do so via the `configureWithAccessory:` function. This will automatically add your passed in `UIView` to the left of the message text view. Configuration would go something like this:
+
+```
+UIButton *cameraButton = [[UIButton alloc] initWithFrame:CGRectMake(0, 0, 20, 20)];
+[self.cameraButton setImage:[UIImage cameraButtonImage] forState:UIControlStateNormal];
+[self.cameraButton addTarget:self action:@selector(cameraClicked:) forControlEvents:UIControlEventTouchUpInside];
+[self.cameraButton setContentMode:UIViewContentModeCenter];
+[self.messageComposerView configureWithAccessory:cameraButton];
+```
+
 ####Delegation
 The `MessageComposerViewDelegate` has several delegate methods:
 
 1. `- (void)messageComposerSendMessageClickedWithMessage:(NSString*)message;`  
 **Required** - Triggered whenever the user presses the send button. `message` is the text within the `UITextView` at the time the button was pressed.
 
-2. `- (void)messageComposerFrameDidChange:(CGRect)frame withAnimationDuration:(CGFloat)duration;`  
+2. `- (void)messageComposerFrameDidChange:(CGRect)frame withAnimationDuration:(CGFloat)duration andCurve:(NSInteger)curve;`  
 **Optional** - Triggered whenever the UITextView frame is reconfigured. `frame` is the CGRect that was applied to the MessageComposerView container. You can use this frame - namely the y pos - to determine the offset of your own views when the keyboard changes position. The duration will allow you to match the animation precisely.
 
 3. `- (void)messageComposerUserTyping;`  
