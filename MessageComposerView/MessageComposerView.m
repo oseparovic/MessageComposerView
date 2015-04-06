@@ -160,7 +160,7 @@ const NSInteger defaultMaxHeight = 100;
     if (accessoryFrame.size.width > 0) {
         messageTextViewFrame.size.width -= accessoryFrame.size.width + _composerBackgroundInsets.left;
     }
-    messageTextViewFrame.size.height = messageTextViewFrame.size.height - _composerBackgroundInsets.top; - _composerBackgroundInsets.bottom;
+    messageTextViewFrame.size.height = messageTextViewFrame.size.height - _composerBackgroundInsets.top - _composerBackgroundInsets.bottom;
     [self.messageTextView setFrame:messageTextViewFrame];
 }
 
@@ -231,7 +231,7 @@ const NSInteger defaultMaxHeight = 100;
 - (void)textViewDidChange:(UITextView *)textView {
     [self setNeedsLayout];
     
-    if ([textView.text isEqualToString:self.messagePlaceholder] || [NSString isEmpty:textView.text]) {
+    if ([textView.text isEqualToString:self.messagePlaceholder] || [textView.text length] == 0) {
         [self.sendButton setEnabled:NO];
     } else {
         [self.sendButton setEnabled:YES];
@@ -267,7 +267,7 @@ const NSInteger defaultMaxHeight = 100;
 }
 
 - (void)textViewDidEndEditing:(UITextView*)textView {
-    if ([textView.text isEqualToString:@""] || [NSString isEmpty:textView.text]) {
+    if ([textView.text isEqualToString:@""] || [textView.text length] == 0) {
         textView.text = self.messagePlaceholder;
         textView.textColor = [UIColor lightGrayColor];
         [self.sendButton setEnabled:NO];
