@@ -406,19 +406,20 @@ const NSInteger defaultMaxHeight = 100;
     if (UIInterfaceOrientationIsLandscape(orientation) && size.height > size.width) {
         size = CGSizeMake(size.height, size.width);
     }
-    
-    id nav = [UIApplication sharedApplication].keyWindow.rootViewController;
-    if ([nav isKindOfClass:[UINavigationController class]]) {
-        UINavigationController *navc = (UINavigationController *) nav;
-        if (!navc.navigationBarHidden) {
-            size.height -= navc.navigationBar.frame.size.height;
-        }
-        if (navc.navigationBar.barPosition == UIBarPositionTopAttached) {
-            size.height -= application.statusBarFrame.size.height;
-        }
-    }
+        //This creates a space between the composer and the keyboard (saw this behaviour using a nav bar inside a tab bar)
+//    id nav = [UIApplication sharedApplication].keyWindow.rootViewController;
+//    if ([nav isKindOfClass:[UINavigationController class]]) {
+//        UINavigationController *navc = (UINavigationController *) nav;
+//        if (!navc.navigationBarHidden) {
+//            size.height -= navc.navigationBar.frame.size.height;
+//        }
+//        if (navc.navigationBar.barPosition == UIBarPositionTopAttached) {
+//            size.height -= application.statusBarFrame.size.height;
+//        }
+//    }
     
     return size;
+
 }
 
 - (UIInterfaceOrientation)currentInterfaceOrientation {
@@ -427,4 +428,29 @@ const NSInteger defaultMaxHeight = 100;
     return [UIApplication sharedApplication].statusBarOrientation;
 }
 
+- (void)setButtonTitle:(NSString *)title forState:(UIControlState)state{
+    if (title) {
+        [self.sendButton setTitle:title forState:state];
+    }
+}
+
+- (void)setButtonBackgroundColor:(UIColor *)backgroundColor andTextColor:(UIColor *)textColor{
+    if (backgroundColor) {
+        self.sendButton.backgroundColor = backgroundColor;
+    }
+    if (textColor) {
+        self.sendButton.titleLabel.textColor = textColor;
+    }
+}
+
+- (void)setComposerViewBackgroundColor:(UIColor *)color andComposerTextViewColor:(UIColor *)composerColor{
+    if (color) {
+        self.backgroundColor = color;
+    }
+    if (composerColor) {
+        self.messageTextView.backgroundColor = composerColor;
+    }
+}
+
 @end
+

@@ -75,4 +75,10 @@
 // do [messageComposerView.messageTextView resignFirstResponder] etc.
 - (void)startEditing;
 - (void)finishEditing;
+
+- (void)setButtonTitle:(NSString *)title forState:(UIControlState)state;
+- (void)setButtonBackgroundColor:(UIColor *)backgroundColor andTextColor:(UIColor *)textColor;
+- (void)setComposerViewBackgroundColor:(UIColor *)color andComposerTextViewColor:(UIColor *)composerColor;
+
+
 @end
