@@ -451,15 +451,6 @@ const NSInteger defaultMaxHeight = 100;
         self.messageTextView.backgroundColor = composerColor;
     }
 }
-                                                   
-
-                                                   
-                                                   
-                                                   
-                                                   
-                                                   
 
 @end
-
-
 
