@@ -48,7 +48,7 @@
 @property(nonatomic) NSInteger keyboardAnimationCurve;
 @property(nonatomic) CGFloat keyboardAnimationDuration;
 @property(nonatomic) NSInteger keyboardOffset;
-
+@property(nonatomic) NSInteger characterCap;
 // configuration method.
 - (void)setup;
 // layout method
@@ -76,3 +76,4 @@
 - (void)startEditing;
 - (void)finishEditing;
 @end
+

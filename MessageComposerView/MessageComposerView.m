@@ -57,8 +57,8 @@ const NSInteger defaultMaxHeight = 100;
     if (self) {
         // Insets for the entire MessageComposerView. Top inset is used as a minimum value of top padding.
         _composerBackgroundInsets = UIEdgeInsetsMake(10, 10, 10, 10);
-        // Insets only for the message UITextView. Default to 10 on the right (between )
-        _composerTVInsets = UIEdgeInsetsMake(0, 0, 0, 10);
+        // Insets only for the message UITextView. Default to 0
+        _composerTVInsets = UIEdgeInsetsZero;
         
         // Default animation time for 5 <= iOS <= 7. Should be overwritten by first keyboard notification.
         _keyboardAnimationDuration = 0.25;
@@ -88,6 +88,8 @@ const NSInteger defaultMaxHeight = 100;
             self.messageTextView = [[UITextView alloc] initWithFrame:CGRectZero];
         }
         
+        self.messageTextView.delegate = self;
+        
         // configure elements
         self.messagePlaceholder = @"Write a message";
         [self setup];
@@ -104,6 +106,8 @@ const NSInteger defaultMaxHeight = 100;
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
+
+#pragma mark - Configuration
 - (void)setup {
     self.backgroundColor = [UIColor lightGrayColor];
     self.autoresizesSubviews = YES;
@@ -114,8 +118,9 @@ const NSInteger defaultMaxHeight = 100;
     [self.sendButton setAutoresizingMask:(UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleLeftMargin)];
     [self.sendButton.layer setCornerRadius:5];
     [self.sendButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    [self.sendButton setTitleColor:[UIColor lightTextColor] forState:UIControlStateDisabled];
-    [self.sendButton setTitleColor:[UIColor lightTextColor] forState:UIControlStateSelected];
+    [self.sendButton setTitleColor:[UIColor lightGrayColor] forState:UIControlStateHighlighted];
+    [self.sendButton setTitleColor:[UIColor lightGrayColor] forState:UIControlStateDisabled];
+    [self.sendButton setTitleColor:[UIColor grayColor] forState:UIControlStateSelected];
     [self.sendButton setBackgroundColor:[UIColor orangeColor]];
     [self.sendButton setTitle:@"Send" forState:UIControlStateNormal];
     [self.sendButton.titleLabel setFont:[UIFont boldSystemFontOfSize:14]];
@@ -139,14 +144,14 @@ const NSInteger defaultMaxHeight = 100;
 - (void)setupFrames {
     CGRect sendButtonFrame = self.bounds;
     sendButtonFrame.size.width = 60;
-    sendButtonFrame.size.height = sendButtonFrame.size.height - _composerBackgroundInsets.top - _composerBackgroundInsets.bottom;
+    sendButtonFrame.size.height = defaultHeight - _composerBackgroundInsets.top - _composerBackgroundInsets.bottom;
     sendButtonFrame.origin.x = self.frame.size.width - _composerBackgroundInsets.right - sendButtonFrame.size.width;
     sendButtonFrame.origin.y = self.bounds.size.height - _composerBackgroundInsets.bottom - sendButtonFrame.size.height;
     [self.sendButton setFrame:sendButtonFrame];
     
     CGRect accessoryFrame = self.bounds;
     accessoryFrame.size.width = self.accessoryViewSubView.frame.size.width;
-    accessoryFrame.size.height = accessoryFrame.size.height - _composerBackgroundInsets.top - _composerBackgroundInsets.bottom;
+    accessoryFrame.size.height = defaultHeight - _composerBackgroundInsets.top - _composerBackgroundInsets.bottom;
     accessoryFrame.origin.x = _composerBackgroundInsets.left;
     accessoryFrame.origin.y = self.bounds.size.height - _composerBackgroundInsets.bottom - accessoryFrame.size.height;
     [self.accessoryView setFrame:accessoryFrame];
@@ -263,6 +268,10 @@ const NSInteger defaultMaxHeight = 100;
     //    if ([self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:andCurve:)]) {
     //        [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:_keyboardAnimationDuration andCurve:_keyboardAnimationCurve];
     //    }
+}
+
+- (BOOL)textView:(UITextView *)textView shouldChangeTextInRange:(NSRange)range replacementText:(NSString *)text {
+    return textView.text.length + (text.length - range.length) <= self.characterCap;
 }
 
 - (void)textViewDidEndEditing:(UITextView*)textView {
@@ -391,13 +400,20 @@ const NSInteger defaultMaxHeight = 100;
 #pragma mark - Screen Size Computation
 - (CGSize)currentScreenSize {
     // return the screen size with respect to the orientation
-    return [self currentScreenSizeInInterfaceOrientation:[self currentInterfaceOrientation]];
+    return ((UIView*)self.nextResponder).frame.size;
+    
+    // there are a few problems with this implementation. Namely nav bar height
+    // especially was unreliable. For example when UIAlertView height was present
+    // we couldn't properly determine the nav bar height. The above method appears to be
+    // working more consistently. If it doesn't work for you try this method below instead.
+    // return [self currentScreenSizeInInterfaceOrientation:[self currentInterfaceOrientation]];
 }
 
 - (CGSize)currentScreenSizeInInterfaceOrientation:(UIInterfaceOrientation)orientation {
     // http://stackoverflow.com/a/7905540/740474
-    CGSize size = [UIScreen mainScreen].bounds.size;
-    UIApplication *application = [UIApplication sharedApplication];
+    
+    // get the size of the application frame (screensize - status bar height)
+    CGSize size = [UIScreen mainScreen].applicationFrame.size;
     
     // if the orientation at this point is landscape but it hasn't fully rotated yet use landscape size instead.
     // handling differs between iOS 7 && 8 so need to check if size is properly configured or not. On
@@ -407,16 +423,8 @@ const NSInteger defaultMaxHeight = 100;
         size = CGSizeMake(size.height, size.width);
     }
     
-    id nav = [UIApplication sharedApplication].keyWindow.rootViewController;
-    if ([nav isKindOfClass:[UINavigationController class]]) {
-        UINavigationController *navc = (UINavigationController *) nav;
-        if (!navc.navigationBarHidden) {
-            size.height -= navc.navigationBar.frame.size.height;
-        }
-        if (navc.navigationBar.barPosition == UIBarPositionTopAttached) {
-            size.height -= application.statusBarFrame.size.height;
-        }
-    }
+    // subtract the height of the navigation bar from the screen height
+    size.height -= [self currentNavigationBarHeight];
     
     return size;
 }
@@ -425,6 +433,20 @@ const NSInteger defaultMaxHeight = 100;
     // Returns the orientation of the Interface NOT the Device. The two do not happen in exact unison so
     // this point is important.
     return [UIApplication sharedApplication].statusBarOrientation;
+}
+
+- (CGFloat)currentNavigationBarHeight {
+    // TODO this will fail to get the correct height when a UIAlertView is present
+    id nav = [UIApplication sharedApplication].keyWindow.rootViewController;
+    if ([nav isKindOfClass:[UINavigationController class]]) {
+        UINavigationController *navc = (UINavigationController *) nav;
+        if(navc.navigationBarHidden) {
+            return 0;
+        } else {
+            return navc.navigationBar.frame.size.height;
+        }
+    }
+    return 0;
 }
 
 @end
