@@ -39,8 +39,8 @@ const NSInteger defaultMaxHeight = 100;
 }
 
 - (id)initWithKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight {
-    CGFloat frameWidth  = [self currentScreenSize].width;
-    CGFloat yPos = [self currentScreenSize].height-defaultHeight;
+    CGFloat frameWidth  = [self currentScreenSizeInInterfaceOrientation:[self currentInterfaceOrientation]].width;
+    CGFloat yPos = [self currentScreenSizeInInterfaceOrientation:[self currentInterfaceOrientation]].height-defaultHeight;
     return [self initWithFrame:CGRectMake(0, yPos, frameWidth, defaultHeight) andKeyboardOffset:offset andMaxHeight:maxTVHeight];
 }
 
@@ -189,10 +189,6 @@ const NSInteger defaultMaxHeight = 100;
         self.frame = frame;
         
         // Even though the height didn't change the origin did so notify delegates
-        // TODO: remove deprecated method
-        if ([self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
-            [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:_keyboardAnimationDuration];
-        }
         if ([self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:andCurve:)]) {
             [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:_keyboardAnimationDuration andCurve:_keyboardAnimationCurve];
         }
@@ -225,10 +221,6 @@ const NSInteger defaultMaxHeight = 100;
         self.messageTextView.frame = newTextViewFrame;
         [self scrollTextViewToBottom];
         
-        // TODO: remove deprecated method
-        if ([self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
-            [self.delegate messageComposerFrameDidChange:newContainerFrame withAnimationDuration:0];
-        }
         if ([self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:andCurve:)]) {
             [self.delegate messageComposerFrameDidChange:newContainerFrame withAnimationDuration:0 andCurve:0];
         }
@@ -265,14 +257,6 @@ const NSInteger defaultMaxHeight = 100;
                         options:(_keyboardAnimationCurve << 16)
                      animations:^{self.frame = frame;}
                      completion:nil];
-    
-    // TODO: remove deprecated method
-    //    if ([self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
-    //        [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:_keyboardAnimationDuration];
-    //    }
-    //    if ([self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:andCurve:)]) {
-    //        [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:_keyboardAnimationDuration andCurve:_keyboardAnimationCurve];
-    //    }
 }
 
 - (BOOL)textView:(UITextView *)textView shouldChangeTextInRange:(NSRange)range replacementText:(NSString *)text {
@@ -294,14 +278,6 @@ const NSInteger defaultMaxHeight = 100;
                         options:(_keyboardAnimationCurve << 16)
                      animations:^{self.frame = frame;}
                      completion:nil];
-    
-    // TODO: remove deprecated method
-    //    if ([self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:)]) {
-    //        [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:_keyboardAnimationDuration];
-    //    }
-    //    if ([self.delegate respondsToSelector:@selector(messageComposerFrameDidChange:withAnimationDuration:andCurve:)]) {
-    //        [self.delegate messageComposerFrameDidChange:frame withAnimationDuration:_keyboardAnimationDuration andCurve:_keyboardAnimationCurve];
-    //    }
 }
 
 
@@ -404,18 +380,36 @@ const NSInteger defaultMaxHeight = 100;
 
 #pragma mark - Screen Size Computation
 - (CGSize)currentScreenSize {
-    // return the screen size with respect to the orientation
-//    return ((UIView*)self.nextResponder).frame.size;
+    // There seem to be problems witch each implementation of getting screenSize. If one of these isn't working for your
+    // specific case please try the others. Note that they might not be cross compatible between different iOS versions :(
     
-    // there are a few problems with this implementation. Namely nav bar height
-    // especially was unreliable. For example when UIAlertView height was present
-    // we couldn't properly determine the nav bar height. The above method appears to be
-    // working more consistently. If it doesn't work for you try this method below instead.
-     return [self currentScreenSizeInInterfaceOrientation:[self currentInterfaceOrientation]];
+    return [self currentScreenSizeAlt1];
+//    return [self currentScreenSizeAlt2];
+//    return [self currentScreenSizeInInterfaceOrientation:[self currentInterfaceOrientation]];
+}
+
+- (CGSize)currentScreenSizeAlt1 {
+    // http://stackoverflow.com/q/31549254/740474
+    // PROBLEMS: self.nextResponder within the UIView is nil at the point of initialization, meaning it can't be
+    // used (at least not that I know) to set up the initial frame. Once the view has been initialized and added
+    // as a subview though this seems to work like a charm for various repositioning uses.
+    return ((UIView*)self.nextResponder).frame.size;
+}
+
+- (CGSize)currentScreenSizeAlt2 {
+    // http://stackoverflow.com/a/15707997/740474
+    // PROBLEMS: nav bar height was unreliable. For example when UIAlertView height was present
+    // we couldn't properly determine the nav bar height. Doesn't work well with rotation.
+    UIView *rootView = [[[UIApplication sharedApplication] keyWindow] rootViewController].view;
+    CGRect originalFrame = [[UIScreen mainScreen] bounds];
+    CGRect adjustedFrame = [rootView convertRect:originalFrame fromView:nil];
+    return adjustedFrame.size;
 }
 
 - (CGSize)currentScreenSizeInInterfaceOrientation:(UIInterfaceOrientation)orientation {
     // http://stackoverflow.com/a/7905540/740474
+    // PROBLEMS: nav bar height was unreliable. For example when UIAlertView height was present
+    // we couldn't properly determine the nav bar height.
     
     // get the size of the application frame (screensize - status bar height)
     CGSize size = [UIScreen mainScreen].applicationFrame.size;
