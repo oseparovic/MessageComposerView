@@ -39,9 +39,9 @@ const NSInteger defaultMaxHeight = 100;
 }
 
 - (id)initWithKeyboardOffset:(NSInteger)offset andMaxHeight:(CGFloat)maxTVHeight {
-    return [self initWithFrame:CGRectMake(0,[self currentScreenSize].height-defaultHeight,[self currentScreenSize].width,defaultHeight)
-             andKeyboardOffset:offset
-                  andMaxHeight:maxTVHeight];
+    CGFloat frameWidth  = [self currentScreenSize].width;
+    CGFloat yPos = [self currentScreenSize].height-defaultHeight;
+    return [self initWithFrame:CGRectMake(0, yPos, frameWidth, defaultHeight) andKeyboardOffset:offset andMaxHeight:maxTVHeight];
 }
 
 - (id)initWithFrame:(CGRect)frame {
@@ -58,7 +58,7 @@ const NSInteger defaultMaxHeight = 100;
         // Insets for the entire MessageComposerView. Top inset is used as a minimum value of top padding.
         _composerBackgroundInsets = UIEdgeInsetsMake(10, 10, 10, 10);
         // Insets only for the message UITextView. Default to 0
-        _composerTVInsets = UIEdgeInsetsZero;
+        _composerTVInsets = UIEdgeInsetsMake(0, 0, 0, 10);
         
         // Default animation time for 5 <= iOS <= 7. Should be overwritten by first keyboard notification.
         _keyboardAnimationDuration = 0.25;
@@ -66,6 +66,11 @@ const NSInteger defaultMaxHeight = 100;
         _keyboardOffset = offset;
         _composerBackgroundInsets.top = MAX(_composerBackgroundInsets.top, frame.size.height - _composerBackgroundInsets.bottom - 34);
         _composerTVMaxHeight = maxTVHeight;
+        
+        // Default character cap if one hasn't been set
+        if (_characterCap <= 0) {
+            _characterCap = 400;
+        }
         
         // alloc necessary elements
         self.sendButton = [[UIButton alloc] initWithFrame:CGRectZero];
@@ -118,9 +123,9 @@ const NSInteger defaultMaxHeight = 100;
     [self.sendButton setAutoresizingMask:(UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleLeftMargin)];
     [self.sendButton.layer setCornerRadius:5];
     [self.sendButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    [self.sendButton setTitleColor:[UIColor lightGrayColor] forState:UIControlStateHighlighted];
-    [self.sendButton setTitleColor:[UIColor lightGrayColor] forState:UIControlStateDisabled];
-    [self.sendButton setTitleColor:[UIColor grayColor] forState:UIControlStateSelected];
+    [self.sendButton setTitleColor:[UIColor grayColor] forState:UIControlStateHighlighted];
+    [self.sendButton setTitleColor:[UIColor grayColor] forState:UIControlStateDisabled];
+    [self.sendButton setTitleColor:[UIColor darkGrayColor] forState:UIControlStateSelected];
     [self.sendButton setBackgroundColor:[UIColor orangeColor]];
     [self.sendButton setTitle:@"Send" forState:UIControlStateNormal];
     [self.sendButton.titleLabel setFont:[UIFont boldSystemFontOfSize:14]];
@@ -400,13 +405,13 @@ const NSInteger defaultMaxHeight = 100;
 #pragma mark - Screen Size Computation
 - (CGSize)currentScreenSize {
     // return the screen size with respect to the orientation
-    return ((UIView*)self.nextResponder).frame.size;
+//    return ((UIView*)self.nextResponder).frame.size;
     
     // there are a few problems with this implementation. Namely nav bar height
     // especially was unreliable. For example when UIAlertView height was present
     // we couldn't properly determine the nav bar height. The above method appears to be
     // working more consistently. If it doesn't work for you try this method below instead.
-    // return [self currentScreenSizeInInterfaceOrientation:[self currentInterfaceOrientation]];
+     return [self currentScreenSizeInInterfaceOrientation:[self currentInterfaceOrientation]];
 }
 
 - (CGSize)currentScreenSizeInInterfaceOrientation:(UIInterfaceOrientation)orientation {
