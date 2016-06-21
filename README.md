@@ -1,4 +1,4 @@
-MessageComposerView
+MessageComposerView [DEPRECATED]
 ===================
 
 If you find yourself needing a `UITextView` that sticks to the keyboard similar to an `inputAccessoryView` that does *not* disappear when the keyboard hides, you'll quickly find that you'll likely have to build out a fairly time consuming custom view. MessageComposerView aims to save you all that setup time and headache and provide a simple, customizable implementation.
